@@ -1,0 +1,8 @@
+[project]
+dependencies = []
+requires-python = ">=3.9, <3.12"
+
+[tool.pdm.dev-dependencies]
+dev = [
+    "-e cli @ file:///${PROJECT_ROOT}/packages/cli",
+]

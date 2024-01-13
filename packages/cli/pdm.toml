@@ -1,0 +1,4 @@
+# Default cache strategy doesn't work with pytorch
+# ref: https://github.com/pdm-project/pdm/issues/1732
+[install]
+cache_method = "symlink_individual"
