@@ -90,3 +90,9 @@ cd ezsam/packages/cli
 pdm install
 pdm start
 ```
+
+Pre-commit is used for some commit hooks:
+```bash
+pip install pre-commit
+pre-commit install
+```
