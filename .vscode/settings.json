@@ -1,22 +1,12 @@
 {
   "[python]": {
-    // "editor.defaultFormatter": "ms-python.autopep8",
     "editor.defaultFormatter": "charliermarsh.ruff",
     "editor.tabSize": 2,
     "editor.formatOnSave": false,
-    //"editor.codeActionsOnSave": {
-    //  "source.fixAll": "explicit",
-    //  "source.organizeImports": "explicit"
-    //},
     "editor.rulers": [
       120
     ]
   },
-  "autopep8.args": [
-    "--max-line-length=120",
-    "--ignore=E121",
-    "--experimental",
-  ],
   "python.defaultInterpreterPath": "packages/cli/.venv/bin/python3",
   "python.analysis.autoImportCompletions": true,
   "python.analysis.extraPaths": [
