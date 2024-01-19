@@ -20,6 +20,7 @@ keywords = [
   "select",
   "remove",
   "prompt",
+  "subtract",
 ]
 authors = [
   {name = "ae9is", email = "aegis.opensource@gmail.com"}
