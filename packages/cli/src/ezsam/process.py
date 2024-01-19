@@ -1,5 +1,11 @@
+# SPDX-License-Identifier: AGPL-3.0-only
+
 import itertools
+import math
 import os
+import sys
+import shlex
+import subprocess as sub
 
 import cv2
 import numpy as np
@@ -7,15 +13,13 @@ import supervision as sv
 import torch
 import torchvision
 import tqdm
+
 import groundingdino.util.inference as gd
-import segment_anything_hq as samhq
+#import segment_anything_hq as samhq # Noisy
 
 from ezsam.dateutils import now
 from ezsam.fileutils import InputMode, get_input_mode
-from ezsam.config import (
-  OUTPUT_IMAGE_FORMAT,
-  OUTPUT_VIDEO_FORMAT,
-)
+from ezsam.formats import OutputImageFormat, OutputVideoCodec, get_video_fmt_from_codec
 
 
 def process_file(
@@ -24,27 +28,24 @@ def process_file(
   box_threshold: float,
   text_threshold: float,
   nms_threshold: float,
-  sam_predictor: samhq.SamPredictor,
+  sam_predictor, #: samhq.SamPredictor,
   grounding_dino_model: gd.Model,
+  img_fmt: OutputImageFormat,
+  codec: OutputVideoCodec,
+  num_test_frames: int,
   output_suffix: str,
   output_dir: str,
   debug: bool,
+  cleanup: bool,
 ) -> None :
   input_mode = get_input_mode(src)
-  input_filename, ext = os.path.splitext(os.path.basename(src))
-  codec = None
-  # Determine output extension
-  if debug:
-    # Debug (annotations) mode can use original format
-    pass
-  else:
-    # Pick a format that supports transparency
-    if input_mode == InputMode.image:
-      ext = '.' + OUTPUT_IMAGE_FORMAT
-    elif input_mode == InputMode.video:
-      ext = '.' + OUTPUT_VIDEO_FORMAT
-      codec = None
-      # TODO
+  # Determine output extension: preserve for images in debug mode, else use formats that support transparency.
+  input_filename, input_ext = os.path.splitext(os.path.basename(src))
+  ext = input_ext
+  if input_mode == InputMode.image and not debug:
+    ext = '.' + img_fmt
+  elif input_mode == InputMode.video:
+    ext = '.' + get_video_fmt_from_codec(codec)
   out = output_dir + '/' + input_filename + output_suffix + ext
   print(f'{now()}: Processing file {src} to {out} ...')
   process_image_args = {
@@ -57,6 +58,7 @@ def process_file(
     'debug': debug,
   }
   print(f'Process image args: {process_image_args}')
+
   if input_mode == InputMode.image:
     # Load image, discarding any alpha channel information if present
     image: np.ndarray = cv2.imread(src)  # note: default method cv2.IMREAD_COLOR, format BGR
@@ -64,9 +66,95 @@ def process_file(
     image_unchanged: np.ndarray = cv2.imread(src, cv2.IMREAD_UNCHANGED)
     processed_image = process_image(image=image, image_unchanged=image_unchanged, **process_image_args)
     cv2.imwrite(out, processed_image)
+
   elif input_mode == InputMode.video:
-    # TODO
-    pass
+    #if debug:
+    #  print('Debug mode, attempting to determine existing video codec ...')
+    #  codec = get_video_codec(src)
+    #  print(f'Found codec: {codec}')
+    print(f'Using extension / codec: {ext} / {codec} ...')
+
+    # Process all input frames to temporary image files
+    tmp_files = []
+    video_frames_generator = sv.get_video_frames_generator(source_path=src)
+    video_info = sv.VideoInfo.from_video_path(video_path=src)
+    fps = video_info.fps
+    (w, h) = video_info.resolution_wh
+    i = 0
+    # I.e. 10 frames => 1 digit, 0..9. 11 frames => 2 digits, 00..10.
+    num_digits = int(math.log10(video_info.total_frames - 1)) + 1
+    if num_test_frames is None:
+      total = video_info.total_frames
+      frame_gen = video_frames_generator
+    else:
+      total = num_test_frames
+      frame_gen = itertools.islice(video_frames_generator, total)
+    for frame in tqdm.tqdm(frame_gen, total=total):
+      # Pad counter to num_digits
+      i_pad = str(i).zfill(num_digits)
+      tmp = f'{output_dir}/{input_filename}.{i_pad}.tmp.{img_fmt}'
+      processed_image = process_image(image=frame, image_unchanged=None, **process_image_args)
+      i += 1
+      print(f'Writing frame {i} to {tmp} ...')
+      cv2.imwrite(tmp, processed_image)
+      tmp_files.append(tmp)
+
+    # Join temporary processed images into video using either FFmpeg or ImageMagick's convert
+    if codec == OutputVideoCodec.gif:
+      tmp_img_naming = f'{output_dir}/{input_filename}.*.tmp.{img_fmt}'
+      cmd_in = ''
+    else:
+      tmp_img_naming = f'{output_dir}/{input_filename}.%{num_digits}d.tmp.{img_fmt}'
+      cmd_in = f'ffmpeg -y -framerate {fps} -i {tmp_img_naming}'
+    # ref: https://stackoverflow.com/a/75461590
+    # Note: Software support is iffy for all but gif.
+    # Chrome can display alpha for vp9+webm.
+    # mpv works for the rest.
+    cmd_out = ''
+    if codec == OutputVideoCodec.prores:
+      cmd_out = f'-c:v prores -pix_fmt yuva444p10le {out}'
+    elif codec == OutputVideoCodec.vp9:
+      cmd_out = f'-c:v libvpx-vp9 -pix_fmt yuva420p {out}'
+    elif codec == OutputVideoCodec.ffv1:
+      cmd_out = f'-c:v ffv1 -pix_fmt yuva420p {out}'
+    elif codec == OutputVideoCodec.apng:
+      cmd_out = f'-c:v apng -pix_fmt rgba {out}'
+    elif codec == OutputVideoCodec.gif:
+      delay = get_delay_from_fps(fps)
+      cmd_out = f'convert -resize {w}x{h} -delay {delay} -dispose Background -loop 0 "{tmp_img_naming}" {out}'
+    else:
+      raise ValueError(f'Invalid codec: {codec}')
+    cmd = cmd_in + ' ' + cmd_out
+    print(f'Joining video frames via command: {cmd} ...')
+    cmd_args = shlex.split(cmd)
+    sub.run(cmd_args)
+
+    if cleanup:
+      for tmp in tmp_files:
+        try:
+          print(f'Deleting temp file: {tmp} ...')
+          os.remove(tmp)
+        except Exception as err:
+          print(f'Error deleting temporary image file {tmp}')
+          print(f'{err}')
+
+
+def get_delay_from_fps(fps):
+  # Get centiseconds delay from frames per second, used as ImageMagick's delay parameter
+  f = fps if (fps is not None and fps != 0) else 1
+  return 100.0 / f
+ 
+
+def get_video_codec(src: str):
+  codec = None
+  try:
+    video_capture = cv2.VideoCapture(src)
+    codec_code = video_capture.get(cv2.CAP_PROP_FOURCC)
+    # Convert OpenCV codec code which is a float to 4 character string
+    codec = int(codec_code).to_bytes(4, byteorder=sys.byteorder).decode()
+  except Exception:
+    print(f'Error getting codec for video {src}')
+  return codec
 
 
 def process_image(
@@ -77,7 +165,7 @@ def process_image(
   box_threshold: float,
   text_threshold: float,
   nms_threshold: float,
-  sam_predictor: samhq.SamPredictor,
+  sam_predictor, #: samhq.SamPredictor,
   grounding_dino_model: gd.Model,
   debug: bool,
 ) -> np.ndarray :
@@ -104,6 +192,7 @@ def process_image(
   detections.class_id = detections.class_id[nms_idx]
   print(f'{now()} After NMS: {len(detections.xyxy)} boxes')
 
+  import segment_anything_hq as samhq
   def segment(sam_predictor: samhq.SamPredictor, image: np.ndarray, xyxy: np.ndarray) -> np.ndarray:
     # Prompt SAM with boxes for all detected objects
     sam_predictor.set_image(image, 'BGR')
@@ -139,15 +228,13 @@ def process_image(
     # Filter image using masks...
     # First join all masks together; reduce on first axis, since that's the mask number in detections.mask.
     # Note: detection.mask is array of n masks * H pixels * W pixels, with each pixel True or False.
-    supermask_true_false: np.ndarray = np.logical_or.reduce(detections.mask, axis=0)
-    # Where mask value is true (opaque), set alpha channel to 255
-    supermask_255_0 = np.where(supermask_true_false, 255, 0)
+    supermask: np.ndarray = np.logical_or.reduce(detections.mask, axis=0)
     # We prefer basing output on original image including any alpha channel, if present
-    processed_image = cv2.cvtColor(image if ndarrayIsNone(image_unchanged) else image_unchanged, cv2.COLOR_BGR2BGRA)
-    # Set alpha channel and save output image
-    processed_image[:, :, 3] = supermask_255_0
+    processed_image = cv2.cvtColor(image if not is_ndarray(image_unchanged) else image_unchanged, cv2.COLOR_BGR2BGRA)
+    # Apply mask to image's alpha channel
+    processed_image[:, :, 3] = np.multiply(processed_image[:, :, 3], supermask)
   return processed_image
 
 
-def ndarrayIsNone(array: np.ndarray):
+def is_ndarray(array: np.ndarray):
   return type(array) is np.ndarray

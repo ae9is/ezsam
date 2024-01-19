@@ -9,16 +9,18 @@
 #
 
 import argparse
+import numbers
 import os
 import sys
 
 import torch
 import groundingdino.util.inference as gd
-import segment_anything_hq as samhq
+#import segment_anything_hq as samhq # Noisy
 
 from ezsam.dateutils import now
 from ezsam.downloader import download
 from ezsam.models import Model, MODEL_URL, get_default_path_from_model
+from ezsam.formats import OutputImageFormat, OutputVideoCodec
 from ezsam.process import process_file
 from ezsam.config import (
   DEFAULT_SAM_MODEL,
@@ -28,26 +30,42 @@ from ezsam.config import (
   DEFAULT_BOX_THRESHOLD,
   DEFAULT_TEXT_THRESHOLD,
   DEFAULT_NMS_THRESHOLD,
+  DEFAULT_IMAGE_FORMAT,
+  DEFAULT_VIDEO_CODEC,
 )
 
 
 def parse_args(argv = None):
+  def unit_interval(value: str):
+    # First, try to parse as a number
+    num = float(value)
+    # Enforce that value is a real number between 0 and 1 inclusive.
+    # Note boolean is subclass of real numbers.
+    if isinstance(num, bool) or not isinstance(num, numbers.Real) or num < 0 or num > 1:
+      raise ValueError(f'Error value {num} should be a float between 0 and 1 inclusive')
+    return num
+
+
   parser = argparse.ArgumentParser('ezsam', add_help=True)
   # fmt: off
   parser.add_argument('input', nargs='+', help='Input image(s) or video(s) to process')
   parser.add_argument('-d', '--debug', action='store_true', help='Debug mode: annotate output with detection boxes and masks instead of removing backgrounds')
   parser.add_argument('--hq', '--use_sam_hq', action='store_true', help='Use SAM-HQ for object segmenting instead of SAM')
-  parser.add_argument('--bmin', '--box_threshold', type=float, default=DEFAULT_BOX_THRESHOLD, help='Confidence threshold for object detection boxes')
-  parser.add_argument('--tmin', '--text_threshold', type=float, default=DEFAULT_TEXT_THRESHOLD, help='Confidence threshold for text prompts to be used at all')
-  parser.add_argument('--nmin', '--nms_threshold', type=float, default=DEFAULT_NMS_THRESHOLD, help='Threshold to remove lower quality object boxes during post processing')
+  parser.add_argument('--bmin', '--box_threshold', type=unit_interval, default=DEFAULT_BOX_THRESHOLD, help='Confidence threshold for object detection boxes [0,1]')
+  parser.add_argument('--tmin', '--text_threshold', type=unit_interval, default=DEFAULT_TEXT_THRESHOLD, help='Confidence threshold for text prompts to be used at all [0,1]')
+  parser.add_argument('--nmin', '--nms_threshold', type=unit_interval, default=DEFAULT_NMS_THRESHOLD, help='Threshold to remove lower quality object boxes during post processing [0,1]')
   parser.add_argument('--gd', '--gd_checkpoint', type=str, required=False, help='Path to GroundingDINO checkpoint file')
   parser.add_argument('-c', '--gconf', '--gd_config', type=str, required=False, help='Path to GroundingDINO config file')
-  parser.add_argument('-m', '--sam_model', type=str, required=False, help='SAM ViT version: vit_b / vit_l / vit_h. If omitted, will guess from checkpoint filename.')
+  parser.add_argument('-m', '--sam_model', '--model', choices=['vit_h', 'vit_l', 'vit_b', 'vit_tiny'], required=False, help='SAM ViT version (vit_h/l/b). If omitted, will guess from checkpoint filename.')
   parser.add_argument('--sam', '--sam_checkpoint', type=str, required=False, help='Path to Segment-Anything checkpoint file')
   parser.add_argument('-p', '--prompts', '--prompt_string', nargs='*', help='Comma delimited list of prompts to use in foreground selection')
   parser.add_argument('--pfile', '--prompt_file', type=str, required=False, help='Path to file with foreground selection prompts, one per line')
-  parser.add_argument('-s', '--output_suffix', type=str, default=DEFAULT_OUTPUT_SUFFIX, help='Suffix to append to processed output name(s) i.e. for ".out", src.jpg -> src.out.jpg')
+  parser.add_argument('--img', '--img_fmt', choices=[c.value for c in OutputImageFormat], default=DEFAULT_IMAGE_FORMAT, help='Image file format to use for output files(s)')
+  parser.add_argument('--codec', '--vc', '--vcodec', choices=[c.value for c in OutputVideoCodec], default=DEFAULT_VIDEO_CODEC, help='Video codec to use for output file(s)')
+  parser.add_argument('--nf', '--num_frames', type=int, required=False, help='Number of frames to process for each input video, for testing purposes')
+  parser.add_argument('-s', '--output_suffix', type=str, default=DEFAULT_OUTPUT_SUFFIX, help='Suffix to append to processed output name(s) i.e. for ".out", src.jpg -> src.out.png')
   parser.add_argument('-o', '--output_dir', type=str, default=DEFAULT_OUTPUT_DIR, help='Directory to write processed output to')
+  parser.add_argument('-k', '--keep', action='store_true', help='Keep temporary image files generated when processing video')
   # fmt: on
   return parser.parse_args(argv)
 
@@ -60,8 +78,10 @@ def main(argv = None):
   SAM_MODEL: str = args.sam_model or DEFAULT_SAM_MODEL
   USE_SAM_HQ: bool = args.hq
   model_name = ''
-  if USE_SAM_HQ and (SAM_MODEL in [Model.vit_h, Model.vit_l, Model.vit_b]):
+  if USE_SAM_HQ:
     model_name = 'hq_'
+  elif SAM_MODEL == 'vit_tiny':
+    raise ValueError('Must use vit_tiny with SAM-HQ only! Please try again with --hq if this is intended')
   model_name += SAM_MODEL
   default_sam_checkpoint_path: str = get_default_path_from_model(model_name)
   sam_checkpoint_path = args.sam or default_sam_checkpoint_path
@@ -69,13 +89,18 @@ def main(argv = None):
   default_gd_checkpoint_path: str = get_default_path_from_model(Model.gd)
   gd_checkpoint_path = args.gd or default_gd_checkpoint_path
   gd_checkpoint_specified: bool = not not args.gd
+  print(f'args.bmin: {args.bmin}')
   BOX_THRESHOLD: float = args.bmin
   TEXT_THRESHOLD: float = args.tmin
   NMS_THRESHOLD: float = args.nmin
   PROMPT_STRING: str = ' '.join(args.prompts) if args.prompts else None
   PROMPT_FILE: str = args.pfile
-  OUTPUT_DIR: str = args.output_dir
+  IMG_FMT: OutputImageFormat = args.img or DEFAULT_IMAGE_FORMAT
+  CODEC: OutputVideoCodec = args.codec or DEFAULT_VIDEO_CODEC
+  NUM_TEST_FRAMES: int = args.nf
+  OUTPUT_DIR: str = args.output_dir.rstrip('/')
   OUTPUT_SUFFIX: str = args.output_suffix
+  CLEANUP: bool = not args.keep
   print('---------------------')
   print('Running with options:')
   print(f'--input: {INPUT}')
@@ -88,6 +113,9 @@ def main(argv = None):
   print(f'--sam_model: {SAM_MODEL}')
   print(f'--sam_checkpoint: {sam_checkpoint_path}')
   print(f'--use_sam_hq: {USE_SAM_HQ}')
+  print(f'--img_fmt: {IMG_FMT}')
+  print(f'--vcodec: {CODEC}')
+  print(f'--num_frames: {NUM_TEST_FRAMES}')
   print(f'--output_dir: {OUTPUT_DIR}')
   print(f'--output_suffix: {OUTPUT_SUFFIX}')
   print(f'--prompt_string: {PROMPT_STRING}')
@@ -115,21 +143,24 @@ def main(argv = None):
 
   # If checkpoint files are not specified, then download default checkpoints as needed
   print('Checking if models need to be downloaded ...')
+  something_downloaded = False
   if not gd_checkpoint_specified and not os.path.isfile(default_gd_checkpoint_path):
     print('Downloading default GroundingDINO model ...')
     outdir = os.path.dirname(default_gd_checkpoint_path)
     download(MODEL_URL[Model.gd], outdir)
+    something_downloaded = True
   if not sam_checkpoint_specified and not os.path.isfile(default_sam_checkpoint_path):
     outdir = os.path.dirname(default_sam_checkpoint_path)
-    if USE_SAM_HQ:
-      print('Downloading default SAM-HQ model ...')
-      download(MODEL_URL[Model.hq_vit_h], outdir)
-    else:
-      print('Downloading default SAM model ...')
-      download(MODEL_URL[Model.vit_h], outdir)
+    print('Downloading model ...')
+    download(MODEL_URL[model_name], outdir)
+    something_downloaded = True
   for checkpoint in [gd_checkpoint_path, sam_checkpoint_path]:
     if not os.path.isfile(checkpoint):
       raise Exception(f'Could not find model checkpoint file: {checkpoint}')
+  if something_downloaded:
+    print('Downloads finished')
+  else:
+    print('... no')
 
   DEVICE = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
   print(f'Running on: {DEVICE}')
@@ -141,6 +172,7 @@ def main(argv = None):
   grounding_dino_model = gd.Model(model_config_path=GD_CONFIG_PATH, model_checkpoint_path=gd_checkpoint_path)
 
   print(f'{now()}: Building SAM model and predictor ...')
+  import segment_anything_hq as samhq
   sam = samhq.sam_model_registry[SAM_MODEL](checkpoint=sam_checkpoint_path)
   sam.to(device=DEVICE)
   sam_predictor = samhq.SamPredictor(sam)
@@ -155,9 +187,13 @@ def main(argv = None):
         'nms_threshold': NMS_THRESHOLD,
         'sam_predictor': sam_predictor,
         'grounding_dino_model': grounding_dino_model,
+        'img_fmt': IMG_FMT,
+        'codec': CODEC,
+        'num_test_frames': NUM_TEST_FRAMES,
         'output_suffix': OUTPUT_SUFFIX,
         'output_dir': OUTPUT_DIR,
         'debug': DEBUG,
+        'cleanup': CLEANUP,
       }
       process_file(**process_file_args)
     except Exception as err: 
