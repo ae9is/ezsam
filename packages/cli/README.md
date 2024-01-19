@@ -6,7 +6,7 @@ A pipeline to extract foreground from images or video via text prompts.
 
 Meta's Segment Anything is a powerful tool for separating parts of images,
 but requires coordinate prompts&mdash;either bounding boxes or points.
-Manual prompt generation is tedious for large collection of still images or video.
+Manual prompt generation is tedious for large collections of still images or video.
 In constrast, text-based prompts describing the object(s) in the foreground to segment can be constant.
 Inspired by [Grounded-Segment-Anything](https://github.com/IDEA-Research/Grounded-Segment-Anything),
 this project tries to package a simpler to use tool.
@@ -22,7 +22,18 @@ or [Segment Anything HQ (SAM-HQ)](https://github.com/SysCV/SAM-HQ).
 
 ## Installation 
 
-TODO
+```bash
+pip install ezsam
+```
+
+For video output, you need to install FFmpeg and have it available on your $PATH as `ffmpeg` for 
+all the encoding options except GIF. GIF output requires Imagemagick; `convert` must be available on your $PATH.
+
+```bash
+apt install ffmpeg imagemagick
+```
+
+For a development install, see [Development](#development).
 
 ## Usage
 
@@ -95,4 +106,26 @@ Pre-commit is used for some commit hooks:
 ```bash
 pip install pre-commit
 pre-commit install
+```
+
+## GPU memory troubleshooting
+
+If you *always* get an error stating "CUDA out of memory", try using a smaller Segment Anything model (vit_tiny, vit_b) or lower resolution (or less) input.
+
+If you only get a CUDA OOM error occasionally, or after a while, try to free up some memory by closing processes using the GPU:
+```bash
+# List commands using nvidia gpu
+fuser -v /dev/nvidia*
+```
+
+You can also try manually getting the GPU to clear some processes:
+```bash
+# Clears all processes accounted so far
+sudo nvidia-smi -caa
+```
+
+If you are using multiple GPUs, and so the GPU you're running CUDA on isn't driving your displays, you can also reset the GPU using:
+```bash
+# Trigger reset of one or more GPUs
+sudo nvidia-smi -r
 ```
