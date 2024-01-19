@@ -15,7 +15,7 @@ import sys
 
 import torch
 import groundingdino.util.inference as gd
-#import segment_anything_hq as samhq # Noisy
+# import segment_anything_hq as samhq # Noisy
 
 from ezsam.dateutils import now
 from ezsam.downloader import download
@@ -26,7 +26,7 @@ from ezsam.config import (
   DEFAULT_SAM_MODEL,
   DEFAULT_GROUNDING_DINO_CONFIG_PATH,
   DEFAULT_OUTPUT_DIR,
-  DEFAULT_OUTPUT_SUFFIX ,
+  DEFAULT_OUTPUT_SUFFIX,
   DEFAULT_BOX_THRESHOLD,
   DEFAULT_TEXT_THRESHOLD,
   DEFAULT_NMS_THRESHOLD,
@@ -35,7 +35,7 @@ from ezsam.config import (
 )
 
 
-def parse_args(argv = None):
+def parse_args(argv=None):
   def unit_interval(value: str):
     # First, try to parse as a number
     num = float(value)
@@ -44,7 +44,6 @@ def parse_args(argv = None):
     if isinstance(num, bool) or not isinstance(num, numbers.Real) or num < 0 or num > 1:
       raise ValueError(f'Error value {num} should be a float between 0 and 1 inclusive')
     return num
-
 
   parser = argparse.ArgumentParser('ezsam', add_help=True)
   # fmt: off
@@ -70,7 +69,7 @@ def parse_args(argv = None):
   return parser.parse_args(argv)
 
 
-def main(argv = None):
+def main(argv=None):
   args = parse_args(argv)
   INPUT: list[str] = args.input or []
   DEBUG: bool = args.debug
@@ -173,6 +172,7 @@ def main(argv = None):
 
   print(f'{now()}: Building SAM model and predictor ...')
   import segment_anything_hq as samhq
+
   sam = samhq.sam_model_registry[SAM_MODEL](checkpoint=sam_checkpoint_path)
   sam.to(device=DEVICE)
   sam_predictor = samhq.SamPredictor(sam)
@@ -196,7 +196,7 @@ def main(argv = None):
         'cleanup': CLEANUP,
       }
       process_file(**process_file_args)
-    except Exception as err: 
+    except Exception as err:
       print(f'Error processing file {src}: {err}')
   print(f'Finished all processing jobs at: {now()}')
 

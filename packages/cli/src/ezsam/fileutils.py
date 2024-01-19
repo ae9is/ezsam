@@ -29,9 +29,6 @@ def get_input_mode(file):
       input_mode = InputMode.other
   else:
     raise ValueError(f'Input is not a file: {file}')
-#  if input_mode == InputMode.video:
-#    raise NotImplementedError(f'Video processing not yet implemented, skipping input: {file}')
   if input_mode == InputMode.other:
     raise ValueError(f'Can only process videos and images, skipping input: {file}')
   return input_mode
-

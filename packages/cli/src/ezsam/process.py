@@ -15,7 +15,7 @@ import torchvision
 import tqdm
 
 import groundingdino.util.inference as gd
-#import segment_anything_hq as samhq # Noisy
+# import segment_anything_hq as samhq # Noisy
 
 from ezsam.dateutils import now
 from ezsam.fileutils import InputMode, get_input_mode
@@ -28,7 +28,7 @@ def process_file(
   box_threshold: float,
   text_threshold: float,
   nms_threshold: float,
-  sam_predictor, #: samhq.SamPredictor,
+  sam_predictor,  #: samhq.SamPredictor,
   grounding_dino_model: gd.Model,
   img_fmt: OutputImageFormat,
   codec: OutputVideoCodec,
@@ -37,7 +37,7 @@ def process_file(
   output_dir: str,
   debug: bool,
   cleanup: bool,
-) -> None :
+) -> None:
   input_mode = get_input_mode(src)
   # Determine output extension: preserve for images in debug mode, else use formats that support transparency.
   input_filename, input_ext = os.path.splitext(os.path.basename(src))
@@ -68,10 +68,6 @@ def process_file(
     cv2.imwrite(out, processed_image)
 
   elif input_mode == InputMode.video:
-    #if debug:
-    #  print('Debug mode, attempting to determine existing video codec ...')
-    #  codec = get_video_codec(src)
-    #  print(f'Found codec: {codec}')
     print(f'Using extension / codec: {ext} / {codec} ...')
 
     # Process all input frames to temporary image files
@@ -143,7 +139,7 @@ def get_delay_from_fps(fps):
   # Get centiseconds delay from frames per second, used as ImageMagick's delay parameter
   f = fps if (fps is not None and fps != 0) else 1
   return 100.0 / f
- 
+
 
 def get_video_codec(src: str):
   codec = None
@@ -165,16 +161,13 @@ def process_image(
   box_threshold: float,
   text_threshold: float,
   nms_threshold: float,
-  sam_predictor, #: samhq.SamPredictor,
+  sam_predictor,  #: samhq.SamPredictor,
   grounding_dino_model: gd.Model,
   debug: bool,
-) -> np.ndarray :
+) -> np.ndarray:
   # Detect objects
   detections: sv.Detections = grounding_dino_model.predict_with_classes(
-    image=image,
-    classes=prompts,
-    box_threshold=box_threshold,
-    text_threshold=text_threshold
+    image=image, classes=prompts, box_threshold=box_threshold, text_threshold=text_threshold
   )
 
   def get_labels(prompts: list[str], detections) -> list[str]:
@@ -182,36 +175,30 @@ def process_image(
 
   # NMS post processing to remove lower quality boxes
   print(f'{now()} Before NMS: {len(detections.xyxy)} boxes')
-  nms_idx = torchvision.ops.nms(
-    torch.from_numpy(detections.xyxy),
-    torch.from_numpy(detections.confidence),
-    nms_threshold
-  ).numpy().tolist()
+  nms_idx = (
+    torchvision.ops.nms(torch.from_numpy(detections.xyxy), torch.from_numpy(detections.confidence), nms_threshold)
+    .numpy()
+    .tolist()
+  )
   detections.xyxy = detections.xyxy[nms_idx]
   detections.confidence = detections.confidence[nms_idx]
   detections.class_id = detections.class_id[nms_idx]
   print(f'{now()} After NMS: {len(detections.xyxy)} boxes')
 
   import segment_anything_hq as samhq
+
   def segment(sam_predictor: samhq.SamPredictor, image: np.ndarray, xyxy: np.ndarray) -> np.ndarray:
     # Prompt SAM with boxes for all detected objects
     sam_predictor.set_image(image, 'BGR')
     result_masks = []
     for box in xyxy:
-      masks, scores, logits = sam_predictor.predict(
-        box=box,
-        multimask_output=True
-      )
+      masks, scores, logits = sam_predictor.predict(box=box, multimask_output=True)
       index = np.argmax(scores)
       result_masks.append(masks[index])
     return np.array(result_masks)
 
   print(f'{now()} Converting object detections to segment masks ...')
-  detections.mask = segment(
-    sam_predictor=sam_predictor,
-    image=image,
-    xyxy=detections.xyxy
-  )
+  detections.mask = segment(sam_predictor=sam_predictor, image=image, xyxy=detections.xyxy)
 
   if debug:
     print(f'{now()} Annotating output image ...')
