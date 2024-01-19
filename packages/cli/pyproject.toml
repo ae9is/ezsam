@@ -71,7 +71,7 @@ build-backend = "pdm.backend"
 lock = ["--no-cross-platform"]
 
 [tool.pdm]
-package-type = "library"
+distribution = "true"
 
 [tool.pdm.scripts]
 lint = "ruff check src"
