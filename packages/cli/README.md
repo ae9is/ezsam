@@ -30,6 +30,7 @@ For video output, you need to install FFmpeg and have it available on your $PATH
 all the encoding options except GIF. GIF output requires Imagemagick; `convert` must be available on your $PATH.
 
 ```bash
+# Examples will be given for apt-based Linuxes like Ubuntu, Debian...
 apt install ffmpeg imagemagick
 ```
 
@@ -86,8 +87,9 @@ To perform image segmentation, you can pick SAM or SAM-HQ:
 * [Segment Anything](https://github.com/facebookresearch/segment-anything) 
 * [Segment Anything HQ (SAM-HQ)](https://github.com/SysCV/SAM-HQ)
 
-For the best results use the biggest model your GPU has memory for.
-From best (slowest) to worst (fastest): ViT-H > ViT-L > ViT-B > ViT-tiny (SAM-HQ only)
+For the best results use the biggest model your GPU has memory for. ViT = Vision Transformer, the model type. From best/slowest to worst/fastest: ViT-H > ViT-L > ViT-B > ViT-tiny.
+
+Note: ViT-tiny is for SAM-HQ only, you must use the `--hq` flag.
 
 ## Development
 
@@ -129,3 +131,5 @@ If you are using multiple GPUs, and so the GPU you're running CUDA on isn't driv
 # Trigger reset of one or more GPUs
 sudo nvidia-smi -r
 ```
+
+Note: nvidia-smi is in the nvidia-utils package of [NVIDIA's CUDA repo for Ubuntu](https://developer.nvidia.com/cuda-downloads?target_os=Linux&target_arch=x86_64&Distribution=Ubuntu&target_version=22.04&target_type=deb_network).
