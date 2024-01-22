@@ -174,40 +174,44 @@ def main(argv=None):
   try:
     DEVICE = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
     print(f'Running on: {DEVICE}')
-    attempt_gpu_cleanup()
 
-    print(f'{now()}: Building GroundingDINO inference model ...')
-    grounding_dino_model = gd.Model(model_config_path=GD_CONFIG_PATH, model_checkpoint_path=gd_checkpoint_path)
+    # Only running inference, not training models, so disable gradient calculation to reduce memory usage
+    # ref: https://pytorch.org/docs/stable/generated/torch.no_grad.html
+    with torch.no_grad():
+      attempt_gpu_cleanup()
 
-    print(f'{now()}: Building SAM model and predictor ...')
-    import segment_anything_hq as samhq
+      print(f'{now()}: Loading GroundingDINO model ...')
+      grounding_dino_model = gd.Model(model_config_path=GD_CONFIG_PATH, model_checkpoint_path=gd_checkpoint_path)
 
-    sam = samhq.sam_model_registry[SAM_MODEL](checkpoint=sam_checkpoint_path)
-    sam.to(device=DEVICE)
-    sam_predictor = samhq.SamPredictor(sam)
+      print(f'{now()}: Loading SAM model and predictor ...')
+      import segment_anything_hq as samhq
 
-    for src in INPUT:
-      try:
-        process_file_args = {
-          'src': src,
-          'prompts': prompts,
-          'box_threshold': BOX_THRESHOLD,
-          'text_threshold': TEXT_THRESHOLD,
-          'nms_threshold': NMS_THRESHOLD,
-          'sam_predictor': sam_predictor,
-          'grounding_dino_model': grounding_dino_model,
-          'img_fmt': IMG_FMT,
-          'codec': CODEC,
-          'num_test_frames': NUM_TEST_FRAMES,
-          'output_suffix': OUTPUT_SUFFIX,
-          'output_dir': OUTPUT_DIR,
-          'debug': DEBUG,
-          'cleanup': CLEANUP,
-        }
-        process_file(**process_file_args)
-      except Exception as err:
-        print(f'Error processing file {src}: {err}')
-    print(f'Finished all processing jobs at: {now()}')
+      sam = samhq.sam_model_registry[SAM_MODEL](checkpoint=sam_checkpoint_path)
+      sam.to(device=DEVICE)
+      sam_predictor = samhq.SamPredictor(sam)
+
+      for src in INPUT:
+        try:
+          process_file_args = {
+            'src': src,
+            'prompts': prompts,
+            'box_threshold': BOX_THRESHOLD,
+            'text_threshold': TEXT_THRESHOLD,
+            'nms_threshold': NMS_THRESHOLD,
+            'sam_predictor': sam_predictor,
+            'grounding_dino_model': grounding_dino_model,
+            'img_fmt': IMG_FMT,
+            'codec': CODEC,
+            'num_test_frames': NUM_TEST_FRAMES,
+            'output_suffix': OUTPUT_SUFFIX,
+            'output_dir': OUTPUT_DIR,
+            'debug': DEBUG,
+            'cleanup': CLEANUP,
+          }
+          process_file(**process_file_args)
+        except Exception as err:
+          print(f'Error processing file {src}: {err}')
+      print(f'Finished all processing jobs at: {now()}')
   except Exception as err:
     print(err)
   finally:
