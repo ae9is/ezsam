@@ -22,7 +22,13 @@ def get_input_mode(file):
     if kind is None or kind.mime is None:
       raise ValueError(f'Could not determine input file type: {file}')
     if kind.mime.startswith('image'):
-      input_mode = InputMode.image
+      # Workaround: treat all input GIFs as video, animated GIFs are much more important to support
+      #  and OpenCV image read doesn't support still image GIF anyways
+      if kind.mime == 'image/gif':
+        print(f'Treating file as video GIF: {file}')
+        input_mode = InputMode.video
+      else:
+        input_mode = InputMode.image
     elif kind.mime.startswith('video'):
       input_mode = InputMode.video
     else:
