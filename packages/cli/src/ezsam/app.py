@@ -19,6 +19,7 @@ import groundingdino.util.inference as gd
 
 from ezsam.lib.date import now
 from ezsam.lib.downloader import download
+from ezsam.lib.gpu import attempt_gpu_cleanup
 from ezsam.models import Model, MODEL_URL, get_default_path_from_model
 from ezsam.formats import OutputImageFormat, OutputVideoCodec
 from ezsam.process import process_file
@@ -65,6 +66,7 @@ def parse_args(argv=None):
   parser.add_argument('-s', '--output_suffix', type=str, default=DEFAULT_OUTPUT_SUFFIX, help='Suffix to append to processed output name(s) i.e. for ".out", src.jpg -> src.out.png')
   parser.add_argument('-o', '--output_dir', type=str, default=DEFAULT_OUTPUT_DIR, help='Directory to write processed output to')
   parser.add_argument('-k', '--keep', action='store_true', help='Keep temporary image files generated when processing video')
+  parser.add_argument('--smem', '--show_memory', action='store_true', help='Show PyTorch CUDA memory summary on completion')
   # fmt: on
   return parser.parse_args(argv)
 
@@ -100,6 +102,7 @@ def main(argv=None):
   OUTPUT_DIR: str = args.output_dir.rstrip('/')
   OUTPUT_SUFFIX: str = args.output_suffix
   CLEANUP: bool = not args.keep
+  SHOW_MEMORY_SUMMARY: bool = args.smem
   print('---------------------')
   print('Running with options:')
   print(f'--input: {INPUT}')
@@ -119,6 +122,7 @@ def main(argv=None):
   print(f'--output_suffix: {OUTPUT_SUFFIX}')
   print(f'--prompt_string: {PROMPT_STRING}')
   print(f'--prompt_file: {PROMPT_FILE}')
+  print(f'--show_memory: {SHOW_MEMORY_SUMMARY}')
   print('---------------------')
 
   # Make a list of all user prompts for selecting foreground elements, prediction classes used in GroundingDINO
@@ -161,44 +165,58 @@ def main(argv=None):
   else:
     print('... no')
 
-  DEVICE = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
-  print(f'Running on: {DEVICE}')
-
   if DEBUG:
     print('Debug mode active: output images will have bounding box and masks overlaying original')
 
-  print(f'{now()}: Building GroundingDINO inference model ...')
-  grounding_dino_model = gd.Model(model_config_path=GD_CONFIG_PATH, model_checkpoint_path=gd_checkpoint_path)
+  grounding_dino_model = None
+  sam = None
+  sam_predictor = None
+  try:
+    DEVICE = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
+    print(f'Running on: {DEVICE}')
+    attempt_gpu_cleanup()
 
-  print(f'{now()}: Building SAM model and predictor ...')
-  import segment_anything_hq as samhq
+    print(f'{now()}: Building GroundingDINO inference model ...')
+    grounding_dino_model = gd.Model(model_config_path=GD_CONFIG_PATH, model_checkpoint_path=gd_checkpoint_path)
 
-  sam = samhq.sam_model_registry[SAM_MODEL](checkpoint=sam_checkpoint_path)
-  sam.to(device=DEVICE)
-  sam_predictor = samhq.SamPredictor(sam)
+    print(f'{now()}: Building SAM model and predictor ...')
+    import segment_anything_hq as samhq
 
-  for src in INPUT:
-    try:
-      process_file_args = {
-        'src': src,
-        'prompts': prompts,
-        'box_threshold': BOX_THRESHOLD,
-        'text_threshold': TEXT_THRESHOLD,
-        'nms_threshold': NMS_THRESHOLD,
-        'sam_predictor': sam_predictor,
-        'grounding_dino_model': grounding_dino_model,
-        'img_fmt': IMG_FMT,
-        'codec': CODEC,
-        'num_test_frames': NUM_TEST_FRAMES,
-        'output_suffix': OUTPUT_SUFFIX,
-        'output_dir': OUTPUT_DIR,
-        'debug': DEBUG,
-        'cleanup': CLEANUP,
-      }
-      process_file(**process_file_args)
-    except Exception as err:
-      print(f'Error processing file {src}: {err}')
-  print(f'Finished all processing jobs at: {now()}')
+    sam = samhq.sam_model_registry[SAM_MODEL](checkpoint=sam_checkpoint_path)
+    sam.to(device=DEVICE)
+    sam_predictor = samhq.SamPredictor(sam)
+
+    for src in INPUT:
+      try:
+        process_file_args = {
+          'src': src,
+          'prompts': prompts,
+          'box_threshold': BOX_THRESHOLD,
+          'text_threshold': TEXT_THRESHOLD,
+          'nms_threshold': NMS_THRESHOLD,
+          'sam_predictor': sam_predictor,
+          'grounding_dino_model': grounding_dino_model,
+          'img_fmt': IMG_FMT,
+          'codec': CODEC,
+          'num_test_frames': NUM_TEST_FRAMES,
+          'output_suffix': OUTPUT_SUFFIX,
+          'output_dir': OUTPUT_DIR,
+          'debug': DEBUG,
+          'cleanup': CLEANUP,
+        }
+        process_file(**process_file_args)
+      except Exception as err:
+        print(f'Error processing file {src}: {err}')
+    print(f'Finished all processing jobs at: {now()}')
+  except Exception as err:
+    print(err)
+  finally:
+    del grounding_dino_model
+    del sam_predictor
+    del sam
+    attempt_gpu_cleanup()
+    if torch.cuda.is_available() and SHOW_MEMORY_SUMMARY:
+      print(torch.cuda.memory_summary())
 
 
 if __name__ == '__main__':
