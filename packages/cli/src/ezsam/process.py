@@ -183,7 +183,19 @@ def process_image(
   detections.xyxy = detections.xyxy[nms_idx]
   detections.confidence = detections.confidence[nms_idx]
   detections.class_id = detections.class_id[nms_idx]
-  print(f'{now()} After NMS: {len(detections.xyxy)} boxes')
+  num_detections = len(detections.xyxy)
+  print(f'{now()} After NMS: {num_detections} boxes')
+
+  if num_detections <= 0:
+    if debug:
+      print(f'Warning: no objects detected for prompts {prompts}, returning original image ...')
+      return image
+    else:
+      print(f'Warning: no objects detected for prompts {prompts}, returning empty image ...')
+      # Create a new image with dimensions of old image plus an alpha channel, and then zero out everything
+      processed_image = cv2.cvtColor(image, cv2.COLOR_BGR2BGRA)
+      processed_image[:, :, :] = 0
+      return processed_image
 
   import segment_anything_hq as samhq
 
