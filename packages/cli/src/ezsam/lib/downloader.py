@@ -2,7 +2,7 @@ import os
 import shutil
 import requests
 
-from ezsam.dateutils import now
+from ezsam.lib.date import now
 
 
 # Download a file from a given URL to the specified directory

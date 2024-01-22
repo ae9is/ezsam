@@ -17,8 +17,8 @@ import torch
 import groundingdino.util.inference as gd
 # import segment_anything_hq as samhq # Noisy
 
-from ezsam.dateutils import now
-from ezsam.downloader import download
+from ezsam.lib.date import now
+from ezsam.lib.downloader import download
 from ezsam.models import Model, MODEL_URL, get_default_path_from_model
 from ezsam.formats import OutputImageFormat, OutputVideoCodec
 from ezsam.process import process_file
