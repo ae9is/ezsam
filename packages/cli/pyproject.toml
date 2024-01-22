@@ -47,11 +47,11 @@ dependencies = [
     "numpy>=1.26.3",
     "supervision>=0.17.1",
     "filetype>=1.2.0",
-    "groundingdino-py>=0.4.0",
     "segment-anything-hq>=0.3",
     "torch>=2.1.2",
     "torchvision>=0.16.2",
     "tqdm>=4.66.1",
+    "rf-groundingdino>=0.1.2",
 ]
 
 [project.urls]
@@ -78,16 +78,13 @@ lint = "ruff check src"
 format = "ruff format ."
 safety = { shell = "pdm export -o requirements.txt && safety check -r requirements.txt --bare" }
 start = "python src/ezsam/app.py {args}"
-clean = "rm -rf .venv .pdm-build .pdm-python .ruff_cache"
-
-[tool.pdm.resolution.overrides]
-supervision = ">=0.17.1"
+clean = "rm -rf .venv .pdm-build .pdm-python .ruff_cache dist"
 
 [tool.pdm.dev-dependencies]
 dev = [
-  "ruff>=0.1.11",
-  "pytest>=7.4.4",
-  "safety>=2.3.5",
+    "ruff>=0.1.11",
+    "pytest>=7.4.4",
+    "safety>=2.3.5",
 ]
 
 [tool.pdm.build]
