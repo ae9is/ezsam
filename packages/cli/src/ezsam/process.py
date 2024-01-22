@@ -170,8 +170,22 @@ def process_image(
     image=image, classes=prompts, box_threshold=box_threshold, text_threshold=text_threshold
   )
 
-  def get_labels(prompts: list[str], detections) -> list[str]:
-    return [f'{prompts[class_id]} {confidence:0.2f}' for _, _, confidence, class_id, _ in detections]
+  def get_labels(prompts: list[str], detections: sv.Detections) -> list[str]:
+    if not prompts or len(prompts) <= 0:
+      raise ValueError('get_labels: No prompts')
+    if not detections or len(detections) <= 0:
+      raise ValueError('get_labels: No detections')
+
+    def generate_label(class_id, confidence):
+      if class_id is None:
+        label = 'Error'
+      else:
+        label = prompts[class_id] if len(prompts) > class_id else f'Class {class_id}'
+      if confidence is None:
+        confidence = 0
+      return f'{label} {confidence:0.2f}'
+
+    return [generate_label(class_id, confidence) for _, _, confidence, class_id, _ in detections]
 
   # NMS post processing to remove lower quality boxes
   print(f'{now()} Before NMS: {len(detections.xyxy)} boxes')
@@ -214,10 +228,13 @@ def process_image(
 
   if debug:
     print(f'{now()} Annotating output image ...')
-    # Annotate image with SAM segment masks and GroundingDINO object detection boxes
-    mask_annotator = sv.MaskAnnotator()
-    box_corner_annotator = sv.BoxCornerAnnotator()
-    label_annotator = sv.LabelAnnotator(text_position=sv.Position.CENTER_OF_MASS)
+    # Annotate image with SAM segment masks and GroundingDINO object detection boxes.
+    # Note: Should set ColorLookup.INDEX when annotating for SAM.
+    # ref: https://github.com/roboflow/notebooks/blob/main/notebooks/how-to-segment-anything-with-sam.ipynb
+    # ref: https://supervision.roboflow.com/annotators/
+    mask_annotator = sv.MaskAnnotator(color_lookup=sv.ColorLookup.INDEX)
+    box_corner_annotator = sv.BoxCornerAnnotator(color_lookup=sv.ColorLookup.INDEX)
+    label_annotator = sv.LabelAnnotator(text_position=sv.Position.CENTER_OF_MASS, color_lookup=sv.ColorLookup.INDEX)
     labels = get_labels(prompts, detections)
     processed_image = mask_annotator.annotate(scene=image.copy(), detections=detections)
     processed_image = box_corner_annotator.annotate(scene=processed_image, detections=detections)
