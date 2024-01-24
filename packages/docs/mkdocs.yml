@@ -1,0 +1,73 @@
+site_name: ezsam
+site_url: https://ae9is.github.io/ezsam
+site_author: ae9is
+site_description: >-
+  Use ezsam to extract foreground from images or video via text prompts
+repo_name: ae9is/ezsam
+repo_url: https://github.com/ae9is/ezsam
+edit_uri: edit/main/packages/docs/src/
+docs_dir: src
+plugins:
+  - search
+markdown_extensions:
+  - admonition
+  - attr_list
+  - toc:
+      permalink: true
+  - pymdownx.emoji:
+      emoji_index: !!python/name:material.extensions.emoji.twemoji
+      emoji_generator: !!python/name:material.extensions.emoji.to_svg
+extra:
+  social:
+    - icon: fontawesome/brands/github
+      link: https://github.com/ae9is/ezsam
+#  analytics:
+#    provider: google
+#    property: !ENV GOOGLE_ANALYTICS_KEY
+#  consent:
+#    title: Would you like a free cookie? 🍪
+#    description: It's just to see how this docs site is used and potentially improve it.
+#    actions:
+#      - manage
+#      - reject
+#      - accept
+#copyright: <a href="#__consent">Change cookie settings</a>
+extra_css:
+  - assets/extra.css
+theme:
+  name: material
+  palette:
+    - media: '(prefers-color-scheme: dark)'
+      scheme: slate
+      toggle:
+        icon: material/weather-night
+        name: Switch to light mode
+    - media: '(prefers-color-scheme: light)'
+      scheme: default
+      toggle:
+        icon: material/weather-sunny
+        name: Switch to dark mode
+  features:
+    - content.action.edit
+    - content.action.view
+    - content.code.annotate
+    - content.code.copy
+    - content.tooltips
+    - navigation.footer
+    - navigation.indexes
+    - navigation.tracking
+    - navigation.path
+    - navigation.top
+#    - navigation.sections
+#    - navigation.tabs
+    - search.highlight
+    - search.share
+    - toc.follow
+  icon:
+    edit: material/pencil 
+    view: material/eye
+nav:
+  - About: index.md
+  - install.md
+  - usage.md
+  - changelog.md
