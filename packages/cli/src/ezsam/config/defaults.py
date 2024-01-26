@@ -3,6 +3,7 @@ from ezsam.formats import OutputImageFormat, OutputVideoCodec
 
 DEFAULT_SAM_MODEL = 'vit_h'
 DEFAULT_GROUNDING_DINO_CONFIG_PATH = './config/GroundingDINO_SwinT_OGC.py'
+DEFAULT_GROUNDING_DINO_CONFIG_PATH_TMP = '.gdconf.py'
 DEFAULT_OUTPUT_DIR = '.'
 DEFAULT_OUTPUT_SUFFIX = '.out'
 DEFAULT_BOX_THRESHOLD = 0.3
