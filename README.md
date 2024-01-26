@@ -12,7 +12,7 @@ Meta's [Segment Anything](https://github.com/facebookresearch/segment-anything) 
 but requires coordinate prompts&mdash;either bounding boxes or points.
 And manual prompt generation is tedious for large collections of still images or video.
 
-In constrast, text-based prompts describing the object(s) in the foreground to segment can be constant.
+In contrast, text-based prompts describing the object(s) in the foreground to segment can be constant.
 Inspired by [Grounded-Segment-Anything](https://github.com/IDEA-Research/Grounded-Segment-Anything),
 this project tries to package a simpler to use tool.
 
