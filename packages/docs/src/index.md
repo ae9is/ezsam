@@ -4,8 +4,6 @@ A tool to segment images and video via text prompts.
 
 Input images and videos, describe the subjects or objects you want to keep, and output new images and videos with the background removed.
 
-**Check out the docs! [ezsam.org](https://www.ezsam.org)**
-
 ## Why?
 
 Meta's [Segment Anything](https://github.com/facebookresearch/segment-anything) is a powerful tool for separating parts of images,
@@ -25,19 +23,9 @@ The foreground is selected using text prompts to [GroundingDINO](https://github.
 Image segments are generated using [Segment Anything](https://github.com/facebookresearch/segment-anything) 
 or [Segment Anything HQ (SAM-HQ)](https://github.com/SysCV/SAM-HQ).
 
-## Quick start
+#####
 
-```bash
-# Ubuntu 22.04, Python 3.9 - 3.11
-pip install ezsam
-sudo apt install ffmpeg imagemagick
-ezsam --help
-```
+[Get started](install.md){ .md-button .md-button--primary .float-right }
+[Learn more](usage.md){ .md-button .float-right .mr-2 }
 
-For more detailed info, see the documentation site here: [ezsam.org](https://www.ezsam.org)
-
-## Monorepo structure
-
-This repository collocates the following packages:
-- [cli](packages/cli): the ezsam command line tool
-- [docs](packages/docs): a static documentation site
+###
