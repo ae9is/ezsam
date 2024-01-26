@@ -4,7 +4,7 @@ A tool to segment images and video via text prompts.
 
 Input images and videos, describe the subjects or objects you want to keep, and output new images and videos with the background removed.
 
-**Check out the docs! [ae9is.github.io/ezsam](ae9is.github.io/ezsam)**
+**Check out the docs! [ezsam.org](https://www.ezsam.org)**
 
 ## Why?
 
@@ -34,7 +34,7 @@ sudo apt install ffmpeg imagemagick
 ezsam --help
 ```
 
-For more detailed info, see the documentation site here: [ae9is.github.io/ezsam](ae9is.github.io/ezsam)
+For more detailed info, see the documentation site here: [ezsam.org](https://www.ezsam.org)
 
 ## Monorepo structure
 
