@@ -189,7 +189,7 @@ def main(argv=None):
       attempt_gpu_cleanup()
 
       print(f'{now()}: Loading GroundingDINO model ...')
-      grounding_dino_model = gd.Model(model_config_path=GD_CONFIG_PATH, model_checkpoint_path=gd_checkpoint_path)
+      grounding_dino_model = gd.Model(model_config_path=GD_CONFIG_PATH, model_checkpoint_path=gd_checkpoint_path, device=DEVICE)
 
       print(f'{now()}: Loading SAM model and predictor ...')
       import segment_anything_hq as samhq
