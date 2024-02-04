@@ -195,8 +195,8 @@ def process_image(
       return processed_image
 
   neg_detections: sv.Detections | None
-  has_neg_detections = neg_prompts and len(neg_prompts) > 0
-  if not debug and has_neg_detections:
+  has_neg_prompts = neg_prompts and len(neg_prompts) > 0
+  if not debug and has_neg_prompts:
     print(f'{now()} Handling negative prompts...')
     neg_detections = detections_for_image(
       grounding_dino_model=grounding_dino_model,
@@ -227,7 +227,7 @@ def process_image(
     # First join all masks together; reduce on first axis, since that's the mask number in detections.mask.
     # Note: detection.mask is array of n masks * H pixels * W pixels, with each pixel True or False.
     pos_supermask: np.ndarray = np.logical_or.reduce(detections.mask, axis=0)
-    if has_neg_detections:
+    if has_neg_prompts and neg_detections:
       # Negative mask is just flipped
       neg_supermask: np.ndarray = ~np.logical_or.reduce(neg_detections.mask, axis=0)
       # Joint removes negative mask from positive
