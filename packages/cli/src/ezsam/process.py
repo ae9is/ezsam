@@ -25,6 +25,7 @@ from ezsam.formats import OutputImageFormat, OutputVideoCodec, get_video_fmt_fro
 def process_file(
   src: str,
   prompts: list[str],
+  neg_prompts: list[str],
   box_threshold: float,
   text_threshold: float,
   nms_threshold: float,
@@ -50,6 +51,7 @@ def process_file(
   print(f'{now()}: Processing file {src} to {out} ...')
   process_image_args = {
     'prompts': prompts,
+    'neg_prompts': neg_prompts,
     'box_threshold': box_threshold,
     'text_threshold': text_threshold,
     'nms_threshold': nms_threshold,
@@ -158,6 +160,7 @@ def process_image(
   # Masks are generated using alpha-stripped version of image, but output image is original with added masks
   image_unchanged: np.ndarray | None,
   prompts: list[str],
+  neg_prompts: list[str],
   box_threshold: float,
   text_threshold: float,
   nms_threshold: float,
@@ -165,66 +168,45 @@ def process_image(
   grounding_dino_model: gd.Model,
   debug: bool,
 ) -> np.ndarray:
-  # Detect objects
-  detections: sv.Detections = grounding_dino_model.predict_with_classes(
-    image=image, classes=prompts, box_threshold=box_threshold, text_threshold=text_threshold
+  print('Processing image...')
+  if debug:
+    print(f'{now()} Joining prompts for debug mode ...')
+    prompts = prompts + (neg_prompts or [])
+  else:
+    print(f'{now()} Handling positive prompts...')
+  detections = detections_for_image(
+    grounding_dino_model=grounding_dino_model,
+    image=image,
+    prompts=prompts,
+    box_threshold=box_threshold,
+    text_threshold=text_threshold,
+    nms_threshold=nms_threshold,
+    sam_predictor=sam_predictor,
   )
-
-  def get_labels(prompts: list[str], detections: sv.Detections) -> list[str]:
-    if not prompts or len(prompts) <= 0:
-      raise ValueError('get_labels: No prompts')
-    if not detections or len(detections) <= 0:
-      raise ValueError('get_labels: No detections')
-
-    def generate_label(class_id, confidence):
-      if class_id is None:
-        label = 'Error'
-      else:
-        label = prompts[class_id] if len(prompts) > class_id else f'Class {class_id}'
-      if confidence is None:
-        confidence = 0
-      return f'{label} {confidence:0.2f}'
-
-    return [generate_label(class_id, confidence) for _, _, confidence, class_id, _ in detections]
-
-  # NMS post processing to remove lower quality boxes
-  print(f'{now()} Before NMS: {len(detections.xyxy)} boxes')
-  nms_idx = (
-    torchvision.ops.nms(torch.from_numpy(detections.xyxy), torch.from_numpy(detections.confidence), nms_threshold)
-    .numpy()
-    .tolist()
-  )
-  detections.xyxy = detections.xyxy[nms_idx]
-  detections.confidence = detections.confidence[nms_idx]
-  detections.class_id = detections.class_id[nms_idx]
-  num_detections = len(detections.xyxy)
-  print(f'{now()} After NMS: {num_detections} boxes')
-
-  if num_detections <= 0:
+  if detections is None:
     if debug:
-      print(f'Warning: no objects detected for prompts {prompts}, returning original image ...')
+      print('Returning original image ...')
       return image
     else:
-      print(f'Warning: no objects detected for prompts {prompts}, returning empty image ...')
+      print('Returning empty image ...')
       # Create a new image with dimensions of old image plus an alpha channel, and then zero out everything
       processed_image = cv2.cvtColor(image, cv2.COLOR_BGR2BGRA)
       processed_image[:, :, :] = 0
       return processed_image
 
-  import segment_anything_hq as samhq
-
-  def segment(sam_predictor: samhq.SamPredictor, image: np.ndarray, xyxy: np.ndarray) -> np.ndarray:
-    # Prompt SAM with boxes for all detected objects
-    sam_predictor.set_image(image, 'BGR')
-    result_masks = []
-    for box in xyxy:
-      masks, scores, logits = sam_predictor.predict(box=box, multimask_output=True)
-      index = np.argmax(scores)
-      result_masks.append(masks[index])
-    return np.array(result_masks)
-
-  print(f'{now()} Converting object detections to segment masks ...')
-  detections.mask = segment(sam_predictor=sam_predictor, image=image, xyxy=detections.xyxy)
+  neg_detections: sv.Detections | None
+  has_neg_detections = neg_prompts and len(neg_prompts) > 0
+  if not debug and has_neg_detections:
+    print(f'{now()} Handling negative prompts...')
+    neg_detections = detections_for_image(
+      grounding_dino_model=grounding_dino_model,
+      image=image,
+      prompts=neg_prompts,
+      box_threshold=box_threshold,
+      text_threshold=text_threshold,
+      nms_threshold=nms_threshold,
+      sam_predictor=sam_predictor,
+    )
 
   if debug:
     print(f'{now()} Annotating output image ...')
@@ -244,7 +226,14 @@ def process_image(
     # Filter image using masks...
     # First join all masks together; reduce on first axis, since that's the mask number in detections.mask.
     # Note: detection.mask is array of n masks * H pixels * W pixels, with each pixel True or False.
-    supermask: np.ndarray = np.logical_or.reduce(detections.mask, axis=0)
+    pos_supermask: np.ndarray = np.logical_or.reduce(detections.mask, axis=0)
+    if has_neg_detections:
+      # Negative mask is just flipped
+      neg_supermask: np.ndarray = ~np.logical_or.reduce(neg_detections.mask, axis=0)
+      # Joint removes negative mask from positive
+      supermask = np.logical_and(pos_supermask, neg_supermask)
+    else:
+      supermask = pos_supermask
     # We prefer basing output on original image including any alpha channel, if present
     processed_image = cv2.cvtColor(image if not is_ndarray(image_unchanged) else image_unchanged, cv2.COLOR_BGR2BGRA)
     # Apply mask to image's alpha channel
@@ -254,3 +243,71 @@ def process_image(
 
 def is_ndarray(array: np.ndarray):
   return type(array) is np.ndarray
+
+
+def detections_for_image(
+    grounding_dino_model: gd.Model,
+    image,
+    prompts: list[str],
+    box_threshold: float,
+    text_threshold: float,
+    nms_threshold: float,
+    sam_predictor,  #: samhq.SamPredictor,
+  ) -> sv.Detections:
+
+  # Detect objects
+  detections: sv.Detections = grounding_dino_model.predict_with_classes(
+    image=image, classes=prompts, box_threshold=box_threshold, text_threshold=text_threshold
+  )
+
+  # NMS post processing to remove lower quality boxes
+  print(f'{now()} Before NMS: {len(detections.xyxy)} boxes')
+  nms_idx = (
+    torchvision.ops.nms(torch.from_numpy(detections.xyxy), torch.from_numpy(detections.confidence), nms_threshold)
+    .numpy()
+    .tolist()
+  )
+  detections.xyxy = detections.xyxy[nms_idx]
+  detections.confidence = detections.confidence[nms_idx]
+  detections.class_id = detections.class_id[nms_idx]
+  num_detections = len(detections.xyxy)
+  print(f'{now()} After NMS: {num_detections} boxes')
+
+  if num_detections <= 0:
+    print(f'Warning: no objects detected for prompts {prompts}')
+    return None
+
+  import segment_anything_hq as samhq
+
+  def segment(sam_predictor: samhq.SamPredictor, image: np.ndarray, xyxy: np.ndarray) -> np.ndarray:
+    # Prompt SAM with boxes for all detected objects
+    sam_predictor.set_image(image, 'BGR')
+    result_masks = []
+    for box in xyxy:
+      masks, scores, logits = sam_predictor.predict(box=box, multimask_output=True)
+      index = np.argmax(scores)
+      result_masks.append(masks[index])
+    return np.array(result_masks)
+  
+  print(f'{now()} Converting object detections to segment masks ...')
+  detections.mask = segment(sam_predictor=sam_predictor, image=image, xyxy=detections.xyxy)
+
+  return detections
+
+
+def get_labels(prompts: list[str], detections: sv.Detections) -> list[str]:
+  if not prompts or len(prompts) <= 0:
+    raise ValueError('get_labels: No prompts')
+  if not detections or len(detections) <= 0:
+    raise ValueError('get_labels: No detections')
+
+  def generate_label(class_id, confidence):
+    if class_id is None:
+      label = 'Error'
+    else:
+      label = prompts[class_id] if len(prompts) > class_id else f'Class {class_id}'
+    if confidence is None:
+      confidence = 0
+    return f'{label} {confidence:0.2f}'
+
+  return [generate_label(class_id, confidence) for _, _, confidence, class_id, _ in detections]

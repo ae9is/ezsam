@@ -63,6 +63,13 @@ Writing prompts with specificity can also help.
 ezsam examples/anime-girl-2.jpg -o examples -s .debug -p girl, phone, bag, railway crossing sign post --debug
 ```
 
+### Negative prompting
+Negative (inverse) prompt selections can be used to remove specific objects from selection.
+
+```bash
+ezsam examples/anime-girl-2.jpg -o examples -s .out -p train -n window
+```
+
 ## Models
 
 The tool uses [GroundingDINO](https://github.com/IDEA-Research/GroundingDINO) for object detection.
