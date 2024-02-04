@@ -60,7 +60,9 @@ def parse_args(argv=None):
   parser.add_argument('-m', '--sam_model', '--model', choices=['vit_h', 'vit_l', 'vit_b', 'vit_tiny'], required=False, help='SAM ViT version (vit_h/l/b). If omitted, will guess from checkpoint filename.')
   parser.add_argument('--sam', '--sam_checkpoint', type=str, required=False, help='Path to Segment-Anything checkpoint file')
   parser.add_argument('-p', '--prompts', '--prompt_string', nargs='*', help='Comma delimited list of prompts to use in foreground selection')
+  parser.add_argument('-n', '--nprompts', '--nprompt_string', nargs='*', help='Comma delimited list of negative prompts to exclude from selection')
   parser.add_argument('--pfile', '--prompt_file', type=str, required=False, help='Path to file with foreground selection prompts, one per line')
+  parser.add_argument('--npfile', '--nprompt_file', type=str, required=False, help='Path to file with negative prompts, one per line')
   parser.add_argument('--img', '--img_fmt', choices=[c.value for c in OutputImageFormat], default=DEFAULT_IMAGE_FORMAT, help='Image file format to use for output files(s)')
   parser.add_argument('--codec', '--vc', '--vcodec', choices=[c.value for c in OutputVideoCodec], default=DEFAULT_VIDEO_CODEC, help='Video codec to use for output file(s)')
   parser.add_argument('--nf', '--num_frames', type=int, required=False, help='Number of frames to process for each input video, for testing purposes')
@@ -96,7 +98,9 @@ def main(argv=None):
   TEXT_THRESHOLD: float = args.tmin
   NMS_THRESHOLD: float = args.nmin
   PROMPT_STRING: str = ' '.join(args.prompts) if args.prompts else None
+  NPROMPT_STRING: str = ' '.join(args.nprompts) if args.nprompts else None
   PROMPT_FILE: str = args.pfile
+  NPROMPT_FILE: str = args.npfile
   IMG_FMT: OutputImageFormat = args.img or DEFAULT_IMAGE_FORMAT
   CODEC: OutputVideoCodec = args.codec or DEFAULT_VIDEO_CODEC
   NUM_TEST_FRAMES: int = args.nf
@@ -122,20 +126,36 @@ def main(argv=None):
   print(f'--output_dir: {OUTPUT_DIR}')
   print(f'--output_suffix: {OUTPUT_SUFFIX}')
   print(f'--prompt_string: {PROMPT_STRING}')
+  print(f'--nprompt_string: {NPROMPT_STRING}')
   print(f'--prompt_file: {PROMPT_FILE}')
+  print(f'--nprompt_file: {NPROMPT_FILE}')
   print(f'--show_memory: {SHOW_MEMORY_SUMMARY}')
   print('---------------------')
 
   # Make a list of all user prompts for selecting foreground elements, prediction classes used in GroundingDINO
-  file_prompts = []
-  if PROMPT_FILE:
-    with open(PROMPT_FILE, 'r') as f:
-      file_prompts = [line.strip() for line in f.readlines()]
-  string_prompts = [prompt.strip() for prompt in PROMPT_STRING.split(',')] if PROMPT_STRING else []
-  prompts = file_prompts + string_prompts
+
+  def prompts_from_file(prompt_file: str) -> list[str]:
+    res = []
+    if prompt_file:
+      with open(prompt_file, 'r') as f:
+        res = [line.strip() for line in f.readlines()]
+    return res
+  
+  def prompts_from_string(prompt_string: str):
+    return [p.strip() for p in prompt_string.split(',')] if prompt_string else []
+  
+  def prompts_from_file_and_string(prompt_file: str, prompt_string: str) -> list[str]:
+    file_prompts = prompts_from_file(prompt_file)
+    string_prompts = prompts_from_string(prompt_string)
+    all_prompts = file_prompts + string_prompts
+    return all_prompts
+
+  prompts = prompts_from_file_and_string(prompt_file=PROMPT_FILE, prompt_string=PROMPT_STRING)
+  neg_prompts = prompts_from_file_and_string(prompt_file=NPROMPT_FILE, prompt_string=NPROMPT_STRING)
   if not prompts or len(prompts) <= 0:
     raise ValueError('You need to specify --prompts for selecting the foreground. See --help')
   print(f'Foreground selection prompts are: {prompts}')
+  print(f'Negative (inverse) selection prompts are: {neg_prompts}')
 
   # Create output directory if it doesn't exist already
   if os.path.exists(OUTPUT_DIR):
@@ -198,11 +218,13 @@ def main(argv=None):
       sam.to(device=DEVICE)
       sam_predictor = samhq.SamPredictor(sam)
 
+      had_error = False
       for src in INPUT:
         try:
           process_file_args = {
             'src': src,
             'prompts': prompts,
+            'neg_prompts': neg_prompts,
             'box_threshold': BOX_THRESHOLD,
             'text_threshold': TEXT_THRESHOLD,
             'nms_threshold': NMS_THRESHOLD,
@@ -219,6 +241,7 @@ def main(argv=None):
           process_file(**process_file_args)
         except Exception as err:
           print(f'Error processing file {src}: {err}')
+          had_error = True
       print(f'Finished all processing jobs at: {now()}')
   except Exception as err:
     print(err)
@@ -231,6 +254,8 @@ def main(argv=None):
     attempt_gpu_cleanup()
     if torch.cuda.is_available() and SHOW_MEMORY_SUMMARY:
       print(torch.cuda.memory_summary())
+    if had_error:
+      print('Warning: at least one file could not be processed. Check for errors!')
 
 
 if __name__ == '__main__':
