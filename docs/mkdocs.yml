@@ -5,7 +5,7 @@ site_description: >-
   Use ezsam to extract foreground from images or video via text prompts
 repo_name: ae9is/ezsam
 repo_url: https://github.com/ae9is/ezsam
-edit_uri: edit/main/packages/docs/src/
+edit_uri: edit/main/docs/src/
 docs_dir: src
 plugins:
   - search

@@ -8,7 +8,7 @@ on:
       - main
     # Only run if docs or self updated
     paths:
-      - packages/docs/**
+      - docs/**
       - .github/workflows/pages.yml
 
   # Allows you to run this workflow manually from the Actions tab
@@ -43,10 +43,10 @@ jobs:
           architecture: 'x64'
       - name: Install Dependencies
         run: |
-          cd packages/docs
+          cd docs
           pip install pdm
           pdm install --frozen-lockfile --production
       - name: Build Docs and Deploy
         run: |
-          cd packages/docs
+          cd docs
           pdm run deploy-pages

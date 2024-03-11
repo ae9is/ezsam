@@ -4,21 +4,21 @@ repos:
   - id: pdm-lock-check
     name: pdm-lock-check
     description: validate lock file when pyproject.toml changes
-    entry: bash -c 'cd packages/app && pdm lock --check'
+    entry: bash -c 'cd app && pdm lock --check'
     language: system
     pass_filenames: false
-    files: ^packages/app/pyproject.toml$
+    files: ^app/pyproject.toml$
   - id: pdm-export-lock
     name: pdm-export-lock
     description: export locked packages to requirements.txt when pdm.lock changes
-    entry: bash -c 'cd packages/app && pdm export -o requirements.txt'
+    entry: bash -c 'cd app && pdm export -o requirements.txt'
     language: system
     pass_filenames: false
-    files: ^packages/app/pdm.lock$
+    files: ^app/pdm.lock$
   - id: pdm-sync
     name: pdm-sync
     description: sync packages with lock file when switching branches
-    entry: bash -c 'cd packages/app && pdm sync'
+    entry: bash -c 'cd app && pdm sync'
     language: system
     pass_filenames: false
     stages:

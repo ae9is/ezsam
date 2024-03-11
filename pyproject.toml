@@ -6,6 +6,6 @@ requires-python = ">=3.9, <3.12"
 
 [tool.pdm.dev-dependencies]
 dev = [
-    "-e cli @ file:///${PROJECT_ROOT}/packages/app",
-    "-e docs @ file:///${PROJECT_ROOT}/packages/docs",
+    "-e app @ file:///${PROJECT_ROOT}/app",
+    "-e docs @ file:///${PROJECT_ROOT}/docs",
 ]
