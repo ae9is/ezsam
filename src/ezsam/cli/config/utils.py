@@ -4,28 +4,32 @@
 import os
 
 from ezsam.cli.config.defaults import (
-  DEFAULT_GROUNDING_DINO_CONFIG_PATH_TMP,
+  DEFAULT_GROUNDING_DINO_CONFIG_PATH,
 )
 
 
-def create_gdconfig_tmpfile(src=DEFAULT_GROUNDING_DINO_CONFIG_PATH_TMP):
-  print(f'Creating temp GroundingDINO config file at: {src} ...')
-  with open(src, 'w') as f:
+def create_gdconfig_file(src=DEFAULT_GROUNDING_DINO_CONFIG_PATH):
+  sane = os.path.abspath(os.path.normpath(src))
+  print(f'Creating GroundingDINO config file at: {sane} ...')
+  outdir = os.path.dirname(sane)
+  if not os.path.exists(outdir):
+    os.makedirs(outdir)
+  with open(sane, 'w') as f:
     f.write(str(DEFAULT_GD_CONFIG))
     f.close()
-  if not os.path.isfile(src):
-    raise Exception(f'Could not create temp file: {DEFAULT_GROUNDING_DINO_CONFIG_PATH_TMP}')
-  return src
+  if not os.path.isfile(sane):
+    raise Exception(f'Could not create temp file: {sane}')
+  return sane
 
 
-def cleanup_gdconfig_tmpfile(src=DEFAULT_GROUNDING_DINO_CONFIG_PATH_TMP):
-  print(f'Cleaning up temp GroundingDINO config file at: {src} ...')
-  if os.path.isfile(src):
-    os.remove(src)
+def cleanup_gdconfig_file(src=DEFAULT_GROUNDING_DINO_CONFIG_PATH):
+  sane = os.path.abspath(os.path.normpath(src))
+  print(f'Cleaning up GroundingDINO config file at: {sane} ...')
+  if os.path.isfile(sane):
+    os.remove(sane)
 
 
-DEFAULT_GD_CONFIG = '''
-batch_size = 1
+DEFAULT_GD_CONFIG = '''batch_size = 1
 modelname = 'groundingdino'
 backbone = 'swin_T_224_1k'
 position_embedding = 'sine'
