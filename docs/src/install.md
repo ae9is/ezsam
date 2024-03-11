@@ -46,7 +46,7 @@ sudo apt install ffmpeg imagemagick
 pip install pipx
 pipx install pdm
 git clone https://github.com/ae9is/ezsam.git
-cd ezsam/packages/app
+cd ezsam
 pdm install
 pdm start
 ```
@@ -63,7 +63,6 @@ direnv allow
 
 Pre-commit is used for some commit hooks:
 ```bash
-cd packages/app
 pip install pre-commit
 pre-commit install
 ```
