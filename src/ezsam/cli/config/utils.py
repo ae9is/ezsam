@@ -29,8 +29,7 @@ def cleanup_gdconfig_file(src=DEFAULT_GROUNDING_DINO_CONFIG_PATH):
     os.remove(sane)
 
 
-DEFAULT_GD_CONFIG = '''
-batch_size = 1
+DEFAULT_GD_CONFIG = '''batch_size = 1
 modelname = 'groundingdino'
 backbone = 'swin_T_224_1k'
 position_embedding = 'sine'
