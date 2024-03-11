@@ -6,11 +6,12 @@
   "configurations": [
     {
       "name": "Python (cli)",
-      "type": "python",
+      "type": "debugpy",
       "request": "launch",
-      "cwd": "${workspaceFolder}/packages/cli",
+      "cwd": "${workspaceFolder}/packages/app",
       "program": "src/ezsam/app.py",
       "console": "integratedTerminal",
+      "justMyCode": false,
       "args": [
         "examples/car-1.jpg",
         "-o", "out/",

@@ -35,9 +35,3 @@ ezsam --help
 ```
 
 For more detailed info, see the documentation site here: [ezsam.org](https://www.ezsam.org)
-
-## Monorepo structure
-
-This repository collocates the following packages:
-- [cli](packages/cli): the ezsam command line tool
-- [docs](packages/docs): a static documentation site
