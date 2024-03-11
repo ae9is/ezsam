@@ -310,4 +310,4 @@ def get_labels(prompts: list[str], detections: sv.Detections) -> list[str]:
       confidence = 0
     return f'{label} {confidence:0.2f}'
 
-  return [generate_label(class_id, confidence) for _, _, confidence, class_id, _ in detections]
+  return [generate_label(class_id, confidence) for _, _, confidence, class_id, _, _ in detections]
