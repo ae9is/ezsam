@@ -8,7 +8,7 @@ ezsam --help
 
 ## Examples
 
-The [example images](https://github.com/ae9is/ezsam/tree/main/app/examples) are sourced from [rembg](https://github.com/danielgatis/rembg/tree/main/examples) for easy comparison.
+The [example images](https://github.com/ae9is/ezsam/tree/main/examples) are sourced from [rembg](https://github.com/danielgatis/rembg/tree/main/examples) for easy comparison.
 
 ### Simple image extraction
 Process images extracting foreground specified by prompt to `examples/animal*.out.png`.

@@ -8,7 +8,7 @@
       "name": "Python (cli)",
       "type": "debugpy",
       "request": "launch",
-      "cwd": "${workspaceFolder}/app",
+      "cwd": "${workspaceFolder}",
       "program": "src/ezsam/cli/app.py",
       "console": "integratedTerminal",
       "justMyCode": false,
