@@ -23,7 +23,7 @@ from ezsam.lib.gpu import attempt_gpu_cleanup
 from ezsam.cli.models import Model, MODEL_URL, get_default_paths_from_model
 from ezsam.cli.formats import OutputImageFormat, OutputVideoCodec
 from ezsam.cli.process import process_file
-from ezsam.cli.config.utils import cleanup_gdconfig_tmpfile, create_gdconfig_tmpfile
+from ezsam.cli.config.utils import create_gdconfig_file
 from ezsam.cli.config.defaults import (
   DEFAULT_SAM_MODEL,
   DEFAULT_GROUNDING_DINO_CONFIG_PATH,
@@ -162,10 +162,9 @@ def main(argv=None):
     os.makedirs(OUTPUT_DIR)
 
   # If GroundingDINO config file doesn't exist already, create config in cache location
-  using_gdconfig_tmpfile = False
   if not os.path.isfile(GD_CONFIG_PATH):
     print(f'Warning: No GroundingDINO config at: {GD_CONFIG_PATH}')
-    GD_CONFIG_PATH = create_gdconfig_tmpfile()
+    GD_CONFIG_PATH = create_gdconfig_file()
 
   sam_checkpoint_path = SAM_CHECKPOINT
   gd_checkpoint_path = GD_CHECKPOINT
@@ -264,8 +263,6 @@ def main(argv=None):
   except Exception as err:
     print(err)
   finally:
-    if using_gdconfig_tmpfile:
-      cleanup_gdconfig_tmpfile()
     del grounding_dino_model
     del sam_predictor
     del sam
