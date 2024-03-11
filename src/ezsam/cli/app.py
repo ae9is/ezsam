@@ -199,7 +199,7 @@ def main(argv=None):
   if not GD_CHECKPOINT:
     gd_checkpoint_path, gd_downloaded = get_cached_model_or_download(Model.gd)
   if not SAM_CHECKPOINT:
-    sam_checkpoint_path, sam_downloaded = get_cached_model_or_download(Model.gd)
+    sam_checkpoint_path, sam_downloaded = get_cached_model_or_download(model_name)
   something_downloaded = gd_downloaded or sam_downloaded
 
   for checkpoint in [gd_checkpoint_path, sam_checkpoint_path]:
