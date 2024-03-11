@@ -186,6 +186,7 @@ def main(argv=None):
       # Check if we have a cached file
       if os.path.isfile(path):
         checkpoint_path = path
+        break
     # No cached file, so set a default location and download
     if not checkpoint_path and len(default_checkpoint_paths) > 0:
       checkpoint_path = default_checkpoint_paths[0]
