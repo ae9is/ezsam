@@ -29,9 +29,10 @@ build-backend = "pdm.backend"
 lock = ["--no-cross-platform"]
 
 [tool.pdm]
-distribution = "true"
+distribution = true
 
 [tool.pdm.scripts]
+install-all = "pdm install -G:all"
 start = "mkdocs serve"
 build = "mkdocs build"
 deploy-pages = "mkdocs gh-deploy --force"
