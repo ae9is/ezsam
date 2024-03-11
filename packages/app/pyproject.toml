@@ -52,6 +52,29 @@ dependencies = [
     "torchvision>=0.16.2",
     "tqdm>=4.66.1",
     "rf-groundingdino>=0.1.2",
+    "customtkinter>=5.2.2",
+    "tkinterdnd2>=0.3.0",
+    "pillow>=10.2.0",
+]
+
+[project.optional-dependencies]
+cli = [
+    "opencv-python>=4.9.0.80",
+    "numpy>=1.26.3",
+    "supervision>=0.17.1",
+    "filetype>=1.2.0",
+    "segment-anything-hq>=0.3",
+    "torch>=2.1.2",
+    "torchvision>=0.16.2",
+    "tqdm>=4.66.1",
+    "rf-groundingdino>=0.1.2",
+]
+gui = [
+    "opencv-python>=4.9.0.80",
+    "numpy>=1.26.3",
+    "customtkinter>=5.2.2",
+    "tkinterdnd2>=0.3.0",
+    "pillow>=10.2.0",
 ]
 
 [project.urls]
@@ -61,6 +84,7 @@ dependencies = [
 
 [project.scripts]
 ezsam = "ezsam.cli.app:main"
+ezsam-gui = "ezsam.gui.app:main"
 
 [build-system]
 requires = ["pdm-backend"]
@@ -80,6 +104,7 @@ format = "ruff format ."
 safety = { shell = "pdm export -o requirements.txt && safety check -r requirements.txt --bare" }
 start = "python src/ezsam/cli/app.py {args}"
 cli = "pdm start {args}"
+gui = "python src/ezsam/gui/app.py {args}"
 clean = "rm -rf .venv .pdm-build .pdm-python .ruff_cache dist"
 
 [tool.pdm.dev-dependencies]
