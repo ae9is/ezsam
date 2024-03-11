@@ -20,11 +20,11 @@ import groundingdino.util.inference as gd
 from ezsam.lib.date import now
 from ezsam.lib.downloader import download
 from ezsam.lib.gpu import attempt_gpu_cleanup
-from ezsam.models import Model, MODEL_URL, get_default_path_from_model
-from ezsam.formats import OutputImageFormat, OutputVideoCodec
-from ezsam.process import process_file
-from ezsam.config.utils import cleanup_gdconfig_tmpfile, create_gdconfig_tmpfile
-from ezsam.config.defaults import (
+from ezsam.cli.models import Model, MODEL_URL, get_default_path_from_model
+from ezsam.cli.formats import OutputImageFormat, OutputVideoCodec
+from ezsam.cli.process import process_file
+from ezsam.cli.config.utils import cleanup_gdconfig_tmpfile, create_gdconfig_tmpfile
+from ezsam.cli.config.defaults import (
   DEFAULT_SAM_MODEL,
   DEFAULT_GROUNDING_DINO_CONFIG_PATH,
   DEFAULT_OUTPUT_DIR,

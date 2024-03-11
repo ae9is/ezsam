@@ -3,7 +3,7 @@
 
 import os
 
-from ezsam.config.defaults import (
+from ezsam.cli.config.defaults import (
   DEFAULT_GROUNDING_DINO_CONFIG_PATH_TMP,
 )
 

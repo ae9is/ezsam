@@ -60,7 +60,7 @@ dependencies = [
 "Source" = "https://github.com/ae9is/ezsam"
 
 [project.scripts]
-ezsam = "ezsam.app:main"
+ezsam = "ezsam.cli.app:main"
 
 [build-system]
 requires = ["pdm-backend"]
@@ -71,13 +71,15 @@ build-backend = "pdm.backend"
 lock = ["--no-cross-platform"]
 
 [tool.pdm]
-distribution = "true"
+distribution = true
 
 [tool.pdm.scripts]
+install-all = "pdm install -G:all"
 lint = "ruff check src"
 format = "ruff format ."
 safety = { shell = "pdm export -o requirements.txt && safety check -r requirements.txt --bare" }
-start = "python src/ezsam/app.py {args}"
+start = "python src/ezsam/cli/app.py {args}"
+cli = "pdm start {args}"
 clean = "rm -rf .venv .pdm-build .pdm-python .ruff_cache dist"
 
 [tool.pdm.dev-dependencies]
