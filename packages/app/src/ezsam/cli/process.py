@@ -19,7 +19,7 @@ import groundingdino.util.inference as gd
 
 from ezsam.lib.date import now
 from ezsam.lib.file import InputMode, get_input_mode
-from ezsam.formats import OutputImageFormat, OutputVideoCodec, get_video_fmt_from_codec
+from ezsam.cli.formats import OutputImageFormat, OutputVideoCodec, get_video_fmt_from_codec
 
 
 def process_file(

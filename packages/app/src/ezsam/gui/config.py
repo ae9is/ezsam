@@ -1,0 +1,9 @@
+WIDTH = 480
+HEIGHT = 640
+PREVIEW_WIDTH = 400
+PREVIEW_HEIGHT = PREVIEW_WIDTH
+APPEARANCE_MODE = 'system'
+COLOR_THEME = 'src/ezsam/gui/assets/theme.json'  # 'blue'
+
+DEFAULT_MODEL = 'SAM Large'
+DEFAULT_DEBUG = False

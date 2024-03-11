@@ -1,4 +1,4 @@
-from ezsam.formats import OutputImageFormat, OutputVideoCodec
+from ezsam.cli.formats import OutputImageFormat, OutputVideoCodec
 
 
 DEFAULT_SAM_MODEL = 'vit_h'

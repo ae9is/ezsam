@@ -7,11 +7,12 @@
       120
     ]
   },
-  "python.defaultInterpreterPath": "packages/cli/.venv/bin/python3",
+  "python.defaultInterpreterPath": "packages/app/.venv/bin/python3",
   "python.analysis.autoImportCompletions": true,
   "python.analysis.extraPaths": [
     ".venv/lib/python3.11/site-packages",
-    "packages/cli/.venv/lib/python3.11/site-packages"
+    "packages/app/.venv/lib/python3.11/site-packages",
+    "packages/*/.venv/lib/python3.11/site-packages"
   ],
   "python.analysis.fixAll": [
     "source.unusedImports"
