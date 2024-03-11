@@ -20,7 +20,7 @@ import groundingdino.util.inference as gd
 from ezsam.lib.date import now
 from ezsam.lib.downloader import download
 from ezsam.lib.gpu import attempt_gpu_cleanup
-from ezsam.cli.models import Model, MODEL_URL, get_default_path_from_model
+from ezsam.cli.models import Model, MODEL_URL, get_default_paths_from_model
 from ezsam.cli.formats import OutputImageFormat, OutputVideoCodec
 from ezsam.cli.process import process_file
 from ezsam.cli.config.utils import cleanup_gdconfig_tmpfile, create_gdconfig_tmpfile
@@ -87,12 +87,8 @@ def main(argv=None):
   elif SAM_MODEL == 'vit_tiny':
     raise ValueError('Must use vit_tiny with SAM-HQ only! Please try again with --hq if this is intended')
   model_name += SAM_MODEL
-  default_sam_checkpoint_path: str = get_default_path_from_model(model_name)
-  sam_checkpoint_path = args.sam or default_sam_checkpoint_path
-  sam_checkpoint_specified: bool = not not args.sam
-  default_gd_checkpoint_path: str = get_default_path_from_model(Model.gd)
-  gd_checkpoint_path = args.gd or default_gd_checkpoint_path
-  gd_checkpoint_specified: bool = not not args.gd
+  SAM_CHECKPOINT: str = args.sam
+  GD_CHECKPOINT = args.gd
   print(f'args.bmin: {args.bmin}')
   BOX_THRESHOLD: float = args.bmin
   TEXT_THRESHOLD: float = args.tmin
@@ -115,10 +111,10 @@ def main(argv=None):
   print(f'--box_threshold: {BOX_THRESHOLD}')
   print(f'--text_threshold: {TEXT_THRESHOLD}')
   print(f'--nms_threshold: {NMS_THRESHOLD}')
-  print(f'--gd_checkpoint: {gd_checkpoint_path}')
+  print(f'--gd_checkpoint: {GD_CHECKPOINT}')
   print(f'--gd_config: {GD_CONFIG_PATH}')
   print(f'--sam_model: {SAM_MODEL}')
-  print(f'--sam_checkpoint: {sam_checkpoint_path}')
+  print(f'--sam_checkpoint: {SAM_CHECKPOINT}')
   print(f'--use_sam_hq: {USE_SAM_HQ}')
   print(f'--img_fmt: {IMG_FMT}')
   print(f'--vcodec: {CODEC}')
@@ -165,26 +161,48 @@ def main(argv=None):
     print(f'Creating output directory: {OUTPUT_DIR} ...')
     os.makedirs(OUTPUT_DIR)
 
-  # If GroundingDINO config file doesn't exist already, create temporary config under a different path
+  # If GroundingDINO config file doesn't exist already, create config in cache location
   using_gdconfig_tmpfile = False
   if not os.path.isfile(GD_CONFIG_PATH):
     print(f'Warning: No GroundingDINO config at: {GD_CONFIG_PATH}')
     GD_CONFIG_PATH = create_gdconfig_tmpfile()
-    using_gdconfig_tmpfile = True
 
-  # If checkpoint files are not specified, then download default checkpoints as needed
+  sam_checkpoint_path = SAM_CHECKPOINT
+  gd_checkpoint_path = GD_CHECKPOINT
+
+  def get_cached_model_or_download(model_name: str) -> list[str, bool]:
+    """
+    See if model exists at a default location in the cache, else download as needed.
+
+    model_name (ezsam.cli.models.Model): Model name to check. Type string enum.
+
+    Returns:
+      str: Path to the cached or downloaded checkpoint file for `model_name`.
+      bool: Whether something needed to be downloaded.
+    """
+    checkpoint_path = None
+    something_downloaded = False
+    default_checkpoint_paths: list[str] = get_default_paths_from_model(model_name)
+    for path in default_checkpoint_paths:
+      # Check if we have a cached file
+      if os.path.isfile(path):
+        checkpoint_path = path
+    # No cached file, so set a default location and download
+    if not checkpoint_path and len(default_checkpoint_paths) > 0:
+      checkpoint_path = default_checkpoint_paths[0]
+      print(f'Downloading model {model_name} ...')
+      outdir = os.path.dirname(checkpoint_path)
+      download(MODEL_URL[model_name], outdir)
+      something_downloaded = True
+    return checkpoint_path, something_downloaded
+  
   print('Checking if models need to be downloaded ...')
-  something_downloaded = False
-  if not gd_checkpoint_specified and not os.path.isfile(default_gd_checkpoint_path):
-    print('Downloading default GroundingDINO model ...')
-    outdir = os.path.dirname(default_gd_checkpoint_path)
-    download(MODEL_URL[Model.gd], outdir)
-    something_downloaded = True
-  if not sam_checkpoint_specified and not os.path.isfile(default_sam_checkpoint_path):
-    outdir = os.path.dirname(default_sam_checkpoint_path)
-    print('Downloading model ...')
-    download(MODEL_URL[model_name], outdir)
-    something_downloaded = True
+  if not GD_CHECKPOINT:
+    gd_checkpoint_path, gd_downloaded = get_cached_model_or_download(Model.gd)
+  if not SAM_CHECKPOINT:
+    sam_checkpoint_path, sam_downloaded = get_cached_model_or_download(Model.gd)
+  something_downloaded = gd_downloaded or sam_downloaded
+
   for checkpoint in [gd_checkpoint_path, sam_checkpoint_path]:
     if not os.path.isfile(checkpoint):
       raise Exception(f'Could not find model checkpoint file: {checkpoint}')
