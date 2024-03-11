@@ -9,7 +9,7 @@
       "type": "debugpy",
       "request": "launch",
       "cwd": "${workspaceFolder}/packages/app",
-      "program": "src/ezsam/app.py",
+      "program": "src/ezsam/cli/app.py",
       "console": "integratedTerminal",
       "justMyCode": false,
       "args": [
