@@ -99,9 +99,10 @@ distribution = true
 
 [tool.pdm.scripts]
 install-all = "pdm install -G:all"
+post_install = "pdm requirements"
 lint = "ruff check src"
 format = "ruff format ."
-safety = { shell = "pdm export -o requirements.txt && safety check -r requirements.txt --bare" }
+requirements = "pdm export -o requirements.txt"
 start = "python src/ezsam/cli/app.py {args}"
 cli = "pdm start {args}"
 gui = "python src/ezsam/gui/app.py {args}"
@@ -111,7 +112,6 @@ clean = "rm -rf .venv .pdm-build .pdm-python .ruff_cache dist"
 dev = [
     "ruff>=0.1.11",
     "pytest>=7.4.4",
-    "safety>=2.3.5",
 ]
 
 [tool.pdm.build]

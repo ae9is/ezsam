@@ -33,18 +33,18 @@ distribution = true
 
 [tool.pdm.scripts]
 install-all = "pdm install -G:all"
+post_install = "pdm requirements"
 start = "mkdocs serve"
 build = "mkdocs build"
 deploy-pages = "mkdocs gh-deploy --force"
 lint = "ruff check src"
 format = "ruff format ."
-safety = { shell = "pdm export -o requirements.txt && safety check -r requirements.txt --bare" }
+requirements = "pdm export -o requirements.txt"
 clean = "rm -rf .venv .pdm-build .pdm-python .ruff_cache dist"
 
 [tool.pdm.dev-dependencies]
 dev = [
     "ruff>=0.1.11",
-    "safety>=2.3.5",
 ]
 
 [tool.ruff]
