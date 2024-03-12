@@ -108,6 +108,7 @@ cli = "pdm start {args}"
 gui = "python src/ezsam/gui/app.py {args}"
 clean = "rm -rf .venv .pdm-build .pdm-python .ruff_cache dist"
 make-pyinstaller = { shell = "bash make-pyinstaller.sh ezsam {args}" }
+make-nuitka = { shell = "bash make-nuitka.sh {args}" }
 make-py2exe = "python make-py2exe.py --version {args}"
 
 [tool.pdm.dev-dependencies]
@@ -117,6 +118,9 @@ dev = [
 ]
 make = [
     "pyinstaller>=6.5.0",
+    "nuitka>=2.1.1",
+]
+make-win = [
     "py2exe>=0.13.0.1",
 ]
 
