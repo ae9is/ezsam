@@ -42,18 +42,14 @@ Currently, the project just installs the default `pytorch` packages for your sys
 
 ## Releases
 
-Release executables of the GUI are generated using one of:
-- pyinstaller
-- py2exe (Windows only)
-- nuitka
+Release executables of the GUI are generated using [Nuitka](https://nuitka.net/).
+
+### Local build
 
 Install the python requirements for making the releases:
 ```bash
 pdm install -dG make
 ```
-
-!!! note
-    It's expected that installation for `py2exe` will fail on non-Windows platforms. Just ignore the error.
 
 For [Nuitka](https://nuitka.net/doc/user-manual.html) requirements on Linux:
 ```bash
@@ -62,14 +58,19 @@ sudo apt install gcc ccache patchelf
 
 See the Nuitka user manual for requirements on other platforms.
 
-Then, the run scripts to make the releases are:
+Then, the run script (which calls a bash script) to make the release is:
 ```bash
-pdm make-pyinstaller
-pdm make-py2exe
 pdm make-nuitka
 ```
 
 !!! note
     You can only generate an executable for the architecture and operating system you're running! I.e. Linux/Windows, arm64/x86_64.
+
+### Cloud build
+
+Multi-platform builds are setup with the GitHub workflow [make.yml](https://github.com/ae9is/ezsam/blob/main/.github/workflows/make.yml), which is manually triggered.
+
+!!! warning
+    It's recommended to build a small test program first like [tests/nuitka-test-simple.py](https://github.com/ae9is/ezsam/blob/main/tests/nuitka-test-simple.py) to make sure the workflow is working correctly. The full ezsam executable build is relatively large and may take an hour or so to build.
 
 ###
