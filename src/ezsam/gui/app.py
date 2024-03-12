@@ -8,6 +8,7 @@ import tkinterdnd2 as dnd
 
 from ezsam.lib.logger import debug, log
 from ezsam.lib.tkutils import create_required_stringvars
+from ezsam.lib.path import resource_path
 from ezsam.lib.preview import get_preview_image
 from ezsam.gui.config import (
   DEFAULT_DEBUG,
@@ -167,7 +168,7 @@ class App(ctk.CTk, dnd.TkinterDnD.DnDWrapper):
 
 def main(argv=None):
   ctk.set_appearance_mode(APPEARANCE_MODE)
-  ctk.set_default_color_theme(COLOR_THEME)
+  ctk.set_default_color_theme(resource_path(COLOR_THEME))
   app = App()
   app.start()
 
