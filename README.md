@@ -1,6 +1,6 @@
 # ezsam (easy segment anything model)
 
-A tool to segment images and video via text prompts.
+A command line and gui tool to segment images and video via text prompts.
 
 Input images and videos, describe the subjects or objects you want to keep, and output new images and videos with the background removed.
 
@@ -32,6 +32,7 @@ or [Segment Anything HQ (SAM-HQ)](https://github.com/SysCV/SAM-HQ).
 pip install ezsam
 sudo apt install ffmpeg imagemagick
 ezsam --help
+ezsam-gui
 ```
 
 For more detailed info, see the documentation site here: [ezsam.org](https://www.ezsam.org)

@@ -107,11 +107,15 @@ start = "python src/ezsam/cli/app.py {args}"
 cli = "pdm start {args}"
 gui = "python src/ezsam/gui/app.py {args}"
 clean = "rm -rf .venv .pdm-build .pdm-python .ruff_cache dist"
+make-nuitka = { shell = "bash make-nuitka.sh {args}" }
 
 [tool.pdm.dev-dependencies]
 dev = [
     "ruff>=0.1.11",
     "pytest>=7.4.4",
+]
+make = [
+    "nuitka>=2.1.1",
 ]
 
 [tool.pdm.build]

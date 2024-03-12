@@ -1,3 +1,21 @@
+# Test file only (not up-to-date with gui/app.py) to quickly check if nuitka can build an executable successfully.
+# This file is *much* quicker to test because it does not link against ezsam.cli (and thus skips a lot of the heavier ML libraries).
+
+# nuitka-project-if: {OS} in ("Windows", "Linux", "FreeBSD"):
+#    nuitka-project: --onefile
+# nuitka-project-if: {OS} == "Darwin":
+#    nuitka-project: --standalone
+#    nuitka-project: --macos-create-app-bundle
+# nuitka-project: --enable-plugin=tk-inter
+# nuitka-project: --onefile
+# nuitka-project: --onefile-tempdir-spec="{TEMP}/ezsam"
+# nuitka-project: --include-data-dir="src/ezsam/gui/assets=src/ezsam/gui/assets"
+# nuitka-project: --output-filename=ntestadv-0.0.0.bin
+# nuitka-project: --product-version=0.0.0
+# nuitka-project: --file-version=0.0.0
+# nuitka-project: --file-description="Test building custom tkinter dnd app with bundled resources"
+# nuitka-project: --output-dir=dist
+
 import sys
 import threading
 import tkinter as tk
@@ -136,10 +154,9 @@ class App(ctk.CTk, dnd.TkinterDnD.DnDWrapper):
     thread.start()
 
   def job(self, *args):
-    from ezsam.cli.app import main as ezsam_job
-    
-    debug(f'Calling ezsam{args} ...')
-    ezsam_job(args)
+    debug(f'Calling dummy job {args} ...')
+    import time
+    time.sleep(2)
     self.on_job_end()
 
   def on_job_end(self):
