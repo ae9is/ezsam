@@ -14,7 +14,7 @@ if [ -z "${version}" ]; then
 fi
 assets="src/ezsam/gui/assets"
 description='ezsam is a tool to extract objects from images or video via text prompt - info at https://www.ezsam.org'
-dist="dist"
+dist="dist-nuitka"
 tempdir="{TEMP}/ezsam"
 outfile="${name}-${version}.bin"
 echo "Creating ${name}-${version} at `date` ..."

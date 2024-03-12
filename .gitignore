@@ -11,6 +11,7 @@ __pycache__/
 build/
 develop-eggs/
 dist/
+dist-nuitka/
 downloads/
 eggs/
 .eggs/
@@ -164,3 +165,7 @@ cython_debug/
 .ruff_cache
 
 *.bak
+models
+input
+out
+*.txt
