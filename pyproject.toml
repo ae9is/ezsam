@@ -107,11 +107,17 @@ start = "python src/ezsam/cli/app.py {args}"
 cli = "pdm start {args}"
 gui = "python src/ezsam/gui/app.py {args}"
 clean = "rm -rf .venv .pdm-build .pdm-python .ruff_cache dist"
+make-pyinstaller = { shell = "bash make-pyinstaller.sh ezsam {args}" }
+make-py2exe = "python make-py2exe.py --version {args}"
 
 [tool.pdm.dev-dependencies]
 dev = [
     "ruff>=0.1.11",
     "pytest>=7.4.4",
+]
+make = [
+    "pyinstaller>=6.5.0",
+    "py2exe>=0.13.0.1",
 ]
 
 [tool.pdm.build]
