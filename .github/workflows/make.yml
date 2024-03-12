@@ -1,0 +1,94 @@
+# Make executable files for multiple operating systems using Nuitka
+# ref: https://nuitka.net/doc/user-manual.html#use-case-7-building-with-github-workflows
+name: make
+
+on:
+  workflow_dispatch:
+    inputs:
+      scriptname:
+        description: 'Path to python script to generate executable of'
+        required: true
+        default: 'src/ezsam/gui/app.py'
+      name:
+        description: 'Name of generated executable'
+        required: true
+        default: ezsam
+      version:
+        description: 'Semantic version string, must be integers x.y.z'
+        required: true
+        default: 0.0.0
+      description:
+        description: 'Description embedded in executable'
+        required: true
+        default:  'ezsam is a tool to extract objects from images or video via text prompt - info at https://www.ezsam.org'
+      datadir:
+        description: 'Directory containing assets to embed into the executable'
+        required: true
+        default: 'src/ezsam/gui/assets'
+
+concurrency:
+  group: 'make'
+  cancel-in-progress: true
+
+jobs:
+  make-executable:
+    timeout-minutes: 180
+    strategy:
+      matrix:
+        os: [ubuntu-latest, windows-latest]
+    runs-on: ${{ matrix.os }}
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: 3.11
+          architecture: 'x64'
+          cache: 'pip'
+          cache-dependency-path: |
+            **/requirements*.txt
+      - name: Install dependencies
+        run: |
+          pip install -r requirements.txt
+      - name: Build executable with Nuitka
+        uses: Nuitka/Nuitka-Action@main
+        with:
+          # ref: https://github.com/Nuitka/Nuitka-Action/blob/main/action.yml
+          nuitka-version: main
+          enable-plugins: tk-inter
+          onefile: true
+          onefile-tempdir-spec: '{TEMP}/${{ github.event.inputs.name }}'
+          include-data-dir: ${{ github.event.inputs.datadir }}=${{ github.event.inputs.datadir }}
+          product-name: ${{ github.event.inputs.name }}
+          product-version: ${{ github.event.inputs.version }}
+          file-version: ${{ github.event.inputs.version }}
+          file-description: ${{ github.event.inputs.description }}
+          output-dir: dist
+          script-name: ${{ github.event.inputs.scriptname }}
+      - name: Fix executable
+        # Rename executable from script name to desired name.
+        # Remove .bin extension and preserve permissions on Linux.
+        # ref: https://github.com/actions/upload-artifact?tab=readme-ov-file#permission-loss
+        # ref: https://stackoverflow.com/a/57948488
+        run: |
+          if [ "$RUNNER_OS" == "Linux" ]; then
+            chmod +x dist/*.bin
+            mv dist/*.bin dist/${{ github.event.inputs.name }}
+            cd dist
+            tar -cvf ${{ github.event.inputs.name }}.tar ${{ github.event.inputs.name }}
+            cd ..
+          elif [ "$RUNNER_OS" == "Windows" ]; then
+            mv dist/*.exe dist/${{ github.event.inputs.name }}.exe
+          else
+            echo "$RUNNER_OS not supported"
+            exit 1
+          fi
+        shell: bash
+      - name: Upload artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ github.event.inputs.name }}-${{ github.event.inputs.version }}-${{ runner.os }}
+          path: |
+            dist/*.exe
+            dist/*.tar
