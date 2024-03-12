@@ -1,5 +1,15 @@
 # Usage
 
+## GUI app
+A simple graphical user interface for the command line `ezsam` tool can be started via:
+
+```bash
+ezsam-gui
+```
+
+!!! note
+    The gui can only process a single image or video file at a time, and the output is written to `<current_directory>/<input_filename>.out.<output_extension>`
+
 ## Options
 
 ```bash
