@@ -1,0 +1,50 @@
+# Publish project to PyPI or PyPI test repository.
+# Make sure to setup this repository as a trusted publisher in the PyPI project, 
+#  and to setup the "release" environment in this repository.
+# ref: https://docs.pypi.org/trusted-publishers/adding-a-publisher/
+name: release
+
+on:
+  # Allows you to run this workflow manually from the Actions tab
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: 'Release tag to publish'
+        required: true
+        default: '0.0.0'
+      test:
+        description: 'Only publish to test PyPI repository?'
+        required: true
+        default: 'true'
+
+# Allow only one concurrent deployment
+concurrency:
+  group: "release"
+  cancel-in-progress: false
+
+jobs:
+  pypi-publish:
+    runs-on: ubuntu-latest
+    environment: release
+    permissions:
+      # Required for trusted publishing
+      id-token: write
+    steps:
+      # Build distributable files to /dist
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.inputs.tag }}
+      - name: Setup pdm
+        uses: pdm-project/setup-pdm@v4
+      - name: Build project
+        run: pdm build
+      # Publish all files at /dist to PyPI
+      - name: Publish package distributions to test PyPI
+        uses: pypa/gh-action-pypi-publish@release/v1
+        if: ${{ github.event.inputs.test == 'true' }}
+        with:
+          repository-url: https://test.pypi.org/legacy/
+      - name: Publish package distributions to production PyPI
+        uses: pypa/gh-action-pypi-publish@release/v1
+        if: ${{ github.event.inputs.test == 'false' }}
