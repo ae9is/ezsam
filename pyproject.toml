@@ -1,6 +1,6 @@
 [project]
 name = "ezsam"
-version = "0.2.1"
+version = "0.3.0"
 description = "Extract foreground from images or video via text prompt" 
 readme = "README.md"
 requires-python = ">=3.9, <3.12"
