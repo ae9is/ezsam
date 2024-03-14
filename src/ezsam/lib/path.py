@@ -5,6 +5,7 @@ import os
 import sys
 import tempfile
 
+from ezsam.lib.config import EXECUTABLE_NAME
 from ezsam.lib.logger import debug, warn
 
 
@@ -21,7 +22,7 @@ def resource_path(relative_path: str) -> str:
   #    Another example, using persistence: {CACHE_DIR}/{PRODUCT}/{VERSION}
   try:
     temp = tempfile.gettempdir()
-    base_path = f'{temp}/ezsam'
+    base_path = f'{temp}/{EXECUTABLE_NAME}'
     path = os.path.normpath(os.path.join(base_path, relative_path))
     open(path)
   except FileNotFoundError:
