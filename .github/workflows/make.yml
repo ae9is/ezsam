@@ -45,7 +45,7 @@ concurrency:
 
 jobs:
   make-executable:
-    timeout-minutes: 180
+    timeout-minutes: 360
     strategy:
       matrix:
         os: [ubuntu-latest, windows-latest]
@@ -54,22 +54,38 @@ jobs:
           - os: ${{ github.event.inputs.all_platforms != 'true' && github.event.inputs.platform != 'windows-latest' && 'windows-latest' }}
     runs-on: ${{ matrix.os }}
     steps:
+      # Nuitka builds take a long time, so we never want to have to re-build if any post-build CI fails
+      - name: Restore cached build
+        id: cache-build-restore
+        uses: actions/cache/restore@v4
+        with:
+          path: |
+            dist
+          key: ${{ github.event.inputs.name }}-${{ github.event.inputs.version }}-build-${{ runner.os }}
       - name: Checkout repository
+        if: steps.cache-build-restore.outputs.cache-hit != 'true'
         uses: actions/checkout@v4
       - name: Setup pdm
+        if: steps.cache-build-restore.outputs.cache-hit != 'true'
         uses: pdm-project/setup-pdm@v4
       - name: Restore cached venv
+        if: steps.cache-build-restore.outputs.cache-hit != 'true'
         id: cache-venv-restore
         uses: actions/cache/restore@v4
         with:
           path: |
             .venv
-          key: ${{ runner.os }}-venv
+          key: venv-${{ runner.os }}-${{ hashFiles('pdm.lock') }}
+          restore-keys: |
+            venv-${{ runner.os }}-
+            venv-
       - name: Install dependencies
+        if: steps.cache-build-restore.outputs.cache-hit != 'true'
         run: |
           pdm install-all
         shell: bash
       - name: Save venv to cache
+        if: steps.cache-build-restore.outputs.cache-hit != 'true'
         id: cache-venv-save
         uses: actions/cache/save@v4
         with:
@@ -77,11 +93,24 @@ jobs:
             .venv
           key: ${{ steps.cache-venv-restore.outputs.cache-primary-key }}
       - name: Build executable with Nuitka
+        if: steps.cache-build-restore.outputs.cache-hit != 'true'
         run: |
           pdm make-nuitka "${{ github.event.inputs.name }}" "${{ github.event.inputs.scriptname }}" \
             "${{ github.event.inputs.version }}" dist \
-            "${{ github.event.inputs.datadir }}" "${{ github.event.inputs.description }}"
+            "${{ github.event.inputs.datadir }}" "${{ github.event.inputs.description }}" ci
         shell: bash
+      - name: Log build folder contents and size
+        run: |
+          du -h dist
+          ls dist/*
+      - name: Save build to cache
+        if: steps.cache-build-restore.outputs.cache-hit != 'true'
+        id: cache-build-save
+        uses: actions/cache/save@v4
+        with:
+          path: |
+            dist
+          key: ${{ steps.cache-build-restore.outputs.cache-primary-key }}
       - name: Fix executable
         # Preserve executable permissions on Linux.
         # ref: https://github.com/actions/upload-artifact?tab=readme-ov-file#permission-loss
@@ -89,22 +118,16 @@ jobs:
         run: |
           if [ "$RUNNER_OS" == "Linux" ]; then
             cd dist
-            tar -cvf ${{ github.event.inputs.name }}-${{ github.event.inputs.version }}.tar ${{ github.event.inputs.name }}-${{ github.event.inputs.version }}
+            tar -cf ${{ github.event.inputs.name }}-${{ github.event.inputs.version }}.tar ${{ github.event.inputs.name }}-${{ github.event.inputs.version }}
             rm -rf ${{ github.event.inputs.name }}-${{ github.event.inputs.version }}
             cd onefile
-            tar -cvf ${{ github.event.inputs.name }}.tar ${{ github.event.inputs.name }}
+            tar -cf ${{ github.event.inputs.name }}.tar ${{ github.event.inputs.name }}
+            rm -rf ${{ github.event.inputs.name }}
             cd ../..
           elif [ "$RUNNER_OS" == "Windows" ]; then
             echo "Nothing to fix"
           fi
         shell: bash
-      - name: Upload standalone archive
-        uses: actions/upload-artifact@v4
-        with:
-          name: ${{ github.event.inputs.name }}-${{ github.event.inputs.version }}-${{ runner.os }}
-          path: |
-            dist/${{ github.event.inputs.name }}-${{ github.event.inputs.version }}.tar
-            dist/${{ github.event.inputs.name }}-${{ github.event.inputs.version }}/
       - name: Upload onefile executable
         uses: actions/upload-artifact@v4
         with:
@@ -112,11 +135,17 @@ jobs:
           path: |
             dist/onefile/*.tar
             dist/onefile/*.exe
-          compression-level: 0
       - name: Upload onefile executable checksum
         uses: actions/upload-artifact@v4
         with:
           name: ${{ github.event.inputs.name }}-${{ github.event.inputs.version }}-${{ runner.os }}-onefile-checksum
           path: |
             dist/onefile/*.sha256
-          compression-level: 0
+      - name: Upload standalone archive
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ github.event.inputs.name }}-${{ github.event.inputs.version }}-${{ runner.os }}
+          path: |
+            dist/${{ github.event.inputs.name }}-${{ github.event.inputs.version }}.tar
+            dist/${{ github.event.inputs.name }}-${{ github.event.inputs.version }}/
+          compression-level: 9
