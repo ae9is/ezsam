@@ -25,6 +25,19 @@ on:
         description: 'Directory containing assets to embed into the executable'
         required: true
         default: 'src/ezsam/gui/assets'
+      all_platforms:
+        description: 'Run workflow on all supported platforms'
+        required: true
+        type: boolean
+        default: true
+      platform:
+        description: 'Single platform to use if not all platforms'
+        required: true
+        type: choice
+        options:
+          - ubuntu-latest
+          - windows-latest
+        default: ubuntu-latest
 
 concurrency:
   group: 'make'
@@ -36,59 +49,74 @@ jobs:
     strategy:
       matrix:
         os: [ubuntu-latest, windows-latest]
+        exclude:
+          - os: ${{ github.event.inputs.all_platforms != 'true' && github.event.inputs.platform != 'ubuntu-latest' && 'ubuntu-latest' }}
+          - os: ${{ github.event.inputs.all_platforms != 'true' && github.event.inputs.platform != 'windows-latest' && 'windows-latest' }}
     runs-on: ${{ matrix.os }}
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
-      - name: Setup Python
-        uses: actions/setup-python@v5
+      - name: Setup pdm
+        uses: pdm-project/setup-pdm@v4
+      - name: Restore cached venv
+        id: cache-venv-restore
+        uses: actions/cache/restore@v4
         with:
-          python-version: 3.11
-          architecture: 'x64'
-          cache: 'pip'
-          cache-dependency-path: |
-            **/requirements*.txt
+          path: |
+            .venv
+          key: ${{ runner.os }}-venv
       - name: Install dependencies
         run: |
-          pip install -r requirements.txt
-      - name: Build executable with Nuitka
-        uses: Nuitka/Nuitka-Action@main
+          pdm install-all
+        shell: bash
+      - name: Save venv to cache
+        id: cache-venv-save
+        uses: actions/cache/save@v4
         with:
-          # ref: https://github.com/Nuitka/Nuitka-Action/blob/main/action.yml
-          nuitka-version: main
-          enable-plugins: tk-inter
-          onefile: true
-          onefile-tempdir-spec: '{TEMP}/${{ github.event.inputs.name }}'
-          include-data-dir: ${{ github.event.inputs.datadir }}=${{ github.event.inputs.datadir }}
-          product-name: ${{ github.event.inputs.name }}
-          product-version: ${{ github.event.inputs.version }}
-          file-version: ${{ github.event.inputs.version }}
-          file-description: ${{ github.event.inputs.description }}
-          output-dir: dist
-          script-name: ${{ github.event.inputs.scriptname }}
+          path: |
+            .venv
+          key: ${{ steps.cache-venv-restore.outputs.cache-primary-key }}
+      - name: Build executable with Nuitka
+        run: |
+          pdm make-nuitka "${{ github.event.inputs.name }}" "${{ github.event.inputs.scriptname }}" \
+            "${{ github.event.inputs.version }}" dist \
+            "${{ github.event.inputs.datadir }}" "${{ github.event.inputs.description }}"
+        shell: bash
       - name: Fix executable
-        # Rename executable from script name to desired name.
-        # Remove .bin extension and preserve permissions on Linux.
+        # Preserve executable permissions on Linux.
         # ref: https://github.com/actions/upload-artifact?tab=readme-ov-file#permission-loss
         # ref: https://stackoverflow.com/a/57948488
         run: |
           if [ "$RUNNER_OS" == "Linux" ]; then
-            chmod +x dist/*.bin
-            mv dist/*.bin dist/${{ github.event.inputs.name }}
             cd dist
+            tar -cvf ${{ github.event.inputs.name }}-${{ github.event.inputs.version }}.tar ${{ github.event.inputs.name }}-${{ github.event.inputs.version }}
+            rm -rf ${{ github.event.inputs.name }}-${{ github.event.inputs.version }}
+            cd onefile
             tar -cvf ${{ github.event.inputs.name }}.tar ${{ github.event.inputs.name }}
-            cd ..
+            cd ../..
           elif [ "$RUNNER_OS" == "Windows" ]; then
-            mv dist/*.exe dist/${{ github.event.inputs.name }}.exe
-          else
-            echo "$RUNNER_OS not supported"
-            exit 1
+            echo "Nothing to fix"
           fi
         shell: bash
-      - name: Upload artifacts
+      - name: Upload standalone archive
         uses: actions/upload-artifact@v4
         with:
           name: ${{ github.event.inputs.name }}-${{ github.event.inputs.version }}-${{ runner.os }}
           path: |
-            dist/*.exe
-            dist/*.tar
+            dist/${{ github.event.inputs.name }}-${{ github.event.inputs.version }}.tar
+            dist/${{ github.event.inputs.name }}-${{ github.event.inputs.version }}/
+      - name: Upload onefile executable
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ github.event.inputs.name }}-${{ github.event.inputs.version }}-${{ runner.os }}-onefile
+          path: |
+            dist/onefile/*.tar
+            dist/onefile/*.exe
+          compression-level: 0
+      - name: Upload onefile executable checksum
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ github.event.inputs.name }}-${{ github.event.inputs.version }}-${{ runner.os }}-onefile-checksum
+          path: |
+            dist/onefile/*.sha256
+          compression-level: 0
