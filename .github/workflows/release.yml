@@ -14,8 +14,9 @@ on:
         default: '0.0.0'
       test:
         description: 'Only publish to test PyPI repository?'
+        type: boolean
         required: true
-        default: 'true'
+        default: true
 
 # Allow only one concurrent deployment
 concurrency:
