@@ -112,21 +112,25 @@ jobs:
             dist
           key: ${{ steps.cache-build-restore.outputs.cache-primary-key }}
       - name: Fix executable
+        # Avoid file limit in zip archives in GitHub upload artifact action.
         # Preserve executable permissions on Linux.
         # ref: https://github.com/actions/upload-artifact?tab=readme-ov-file#permission-loss
         # ref: https://stackoverflow.com/a/57948488
         run: |
+          cd dist
+          echo "Creating tar of standalone executable folder to prevent artifact upload errors ..."
+          tar -cf ${{ github.event.inputs.name }}-${{ github.event.inputs.version }}.tar ${{ github.event.inputs.name }}-${{ github.event.inputs.version }}
+          rm -rf ${{ github.event.inputs.name }}-${{ github.event.inputs.version }}
           if [ "$RUNNER_OS" == "Linux" ]; then
-            cd dist
-            tar -cf ${{ github.event.inputs.name }}-${{ github.event.inputs.version }}.tar ${{ github.event.inputs.name }}-${{ github.event.inputs.version }}
-            rm -rf ${{ github.event.inputs.name }}-${{ github.event.inputs.version }}
+            echo "Creating tar of onefile executable to preserve permissions ..."
             cd onefile
             tar -cf ${{ github.event.inputs.name }}.tar ${{ github.event.inputs.name }}
             rm -rf ${{ github.event.inputs.name }}
-            cd ../..
+            cd ..
           elif [ "$RUNNER_OS" == "Windows" ]; then
-            echo "Nothing to fix"
+            echo "Nothing else to do"
           fi
+          cd ..
         shell: bash
       - name: Upload onefile executable
         uses: actions/upload-artifact@v4
