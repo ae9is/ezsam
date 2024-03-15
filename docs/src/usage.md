@@ -11,6 +11,7 @@ ezsam-gui
     The gui can only process a single image or video file at a time, and the output is written to `<current_directory>/<input_filename>.out.<output_extension>`
 
 ## Options
+The command-line app `ezsam` contains more options than the gui:
 
 ```bash
 ezsam --help
@@ -26,6 +27,9 @@ Process images extracting foreground specified by prompt to `examples/animal*.ou
 ```bash
 ezsam examples/animal*.jpg -p animal -o examples
 ```
+
+<img src="https://raw.githubusercontent.com/ae9is/ezsam/main/examples/animal-1.out.png" width=200 />
+<img src="https://raw.githubusercontent.com/ae9is/ezsam/main/examples/animal-2.out.png" width=200 />
 
 !!! note
     For image extractions, which require adding an alpha channel, the output image format is always `png`.
@@ -47,6 +51,8 @@ Multiple objects can be selected as the foreground. The output image `./car-1.ou
 ezsam examples/car-1.jpg -p car, person
 ```
 
+<img src="https://raw.githubusercontent.com/ae9is/ezsam/main/examples/car-1.out.png" width=400 />
+
 ### Debug mode
 Use debug mode to fine tune or troubleshoot prompts. This writes output with foreground mask and object detections
 annotated over the original image file. Here we write out to `test/car-3.debug.jpg`.
@@ -55,6 +61,8 @@ annotated over the original image file. Here we write out to `test/car-3.debug.j
 ```bash
 ezsam examples/car-3.jpg -p white car -o test -s .debug --debug
 ```
+
+<img src="https://raw.githubusercontent.com/ae9is/ezsam/main/examples/car-3.debug.jpg" width=400 />
 
 !!! note
     Note the original image format `jpg` is preserved in debug mode!
@@ -66,6 +74,18 @@ The object detection box threshold parameter can be used to fine tune objects fo
 ezsam examples/car-3.jpg -p white car -o test --bmin 0.45
 ```
 
+<img src="https://raw.githubusercontent.com/ae9is/ezsam/main/examples/car-3.white.png" width=400 />
+
+Or...
+
+```bash
+ezsam examples/food.mp4 -p turkey -o examples -s .turkey --hq -m vit_h --keep --bmin 0.46
+```
+
+<video src="https://raw.githubusercontent.com/ae9is/ezsam/main/examples/food.turkey.webm" height=400 controls>
+  A whole cooked turkey flying through the void.
+</video>
+
 ### Complex prompts
 Writing prompts with specificity can also help.
 
@@ -73,12 +93,19 @@ Writing prompts with specificity can also help.
 ezsam examples/anime-girl-2.jpg -o examples -s .debug -p girl, phone, bag, railway crossing sign post --debug
 ```
 
+<img src="https://raw.githubusercontent.com/ae9is/ezsam/main/examples/anime-girl-2.debug.jpg" width=400 />
+
+!!! note
+    When the GroundingDINO object detection model can't map your input prompt onto any classes for a detection box with confidence, in debug mode the generated label for that box will be "Error" instead.
+
 ### Negative prompting
 Negative (inverse) prompt selections can be used to remove specific objects from selection.
 
 ```bash
 ezsam examples/anime-girl-2.jpg -o examples -s .out -p train -n window
 ```
+
+<img src="https://raw.githubusercontent.com/ae9is/ezsam/main/examples/anime-girl-2.out.png" width=400 />
 
 ## Models
 
@@ -89,7 +116,7 @@ To perform image segmentation, you can pick SAM or SAM-HQ:
 * [Segment Anything](https://github.com/facebookresearch/segment-anything) 
 * [Segment Anything HQ (SAM-HQ)](https://github.com/SysCV/SAM-HQ)
 
-For the best results use the biggest model your GPU has memory for. ViT = Vision Transformer, the model type. From best/slowest to worst/fastest: ViT-H > ViT-L > ViT-B > ViT-tiny.
+For the best results use the biggest model your GPU has memory for. ViT = Vision Transformer, the model type. From best/slowest to worst/fastest: ViT-h(uge) > ViT-l(arge) > ViT-b(ase) > ViT-tiny.
 
 !!! note
     ViT-tiny is for SAM-HQ only, you must use the `--hq` flag.
@@ -120,5 +147,13 @@ sudo nvidia-smi -r
 
 !!! note
     nvidia-smi is in the nvidia-utils package of [NVIDIA's CUDA repo for Ubuntu](https://developer.nvidia.com/cuda-downloads?target_os=Linux&target_arch=x86_64&Distribution=Ubuntu&target_version=22.04&target_type=deb_network).
+
+### GUI
+
+#### Job failures
+On certain job failures the gui might not detect the job as ended, keeping the cursor spinning and preventing another run from being queued. A workaround is to just restart.
+
+#### Slow to load
+The one-file build takes a couple seconds to extract itself and start up, [see here](develop.md#standalone-vs-one-file).
 
 ###
