@@ -6,9 +6,11 @@ Input images and videos, describe the subjects or objects you want to keep, and 
 
 **Check out the docs! [ezsam.org](https://www.ezsam.org)**
 
-<img src="examples/car-3.gui.png" height=200 />
-<img src="examples/food.gif" height=200 alt="A large table with plates of Thanksgiving food including a whole turkey on a conveyor-style lazy susan." />
-<img src="examples/food.turkey.gif" height=200 alt="A whole cooked turkey flying through the void." />
+<p>
+  <img src="examples/car-3.gui.png" height=200 />
+  <img src="examples/food.gif" height=200 alt="A large table with plates of Thanksgiving food including a whole turkey on a conveyor-style lazy susan." />
+  <img src="examples/food.turkey.gif" height=200 alt="A whole cooked turkey flying through the void." />
+</p>
 
 <img src="examples/car-3.both.png" width=150 />
 
