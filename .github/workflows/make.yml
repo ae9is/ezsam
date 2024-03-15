@@ -20,7 +20,7 @@ on:
       description:
         description: 'Description embedded in executable'
         required: true
-        default:  'ezsam is a tool to extract objects from images or video via text prompt - info at https://www.ezsam.org'
+        default:  'ezsam - a tool to extract objects from images or video via text prompt - info at https://www.ezsam.org'
       datadir:
         description: 'Directory containing assets to embed into the executable'
         required: true
@@ -132,14 +132,14 @@ jobs:
           fi
           cd ..
         shell: bash
-      - name: Upload onefile executable
+      - name: Upload one-file executable
         uses: actions/upload-artifact@v4
         with:
           name: ${{ github.event.inputs.name }}-${{ github.event.inputs.version }}-${{ runner.os }}-onefile
           path: |
             dist/onefile/*.tar
             dist/onefile/*.exe
-      - name: Upload onefile executable checksum
+      - name: Upload one-file executable checksum
         uses: actions/upload-artifact@v4
         with:
           name: ${{ github.event.inputs.name }}-${{ github.event.inputs.version }}-${{ runner.os }}-onefile-checksum

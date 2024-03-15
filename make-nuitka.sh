@@ -28,12 +28,12 @@ if [ -z "${assets}" ]; then
   assets="src/ezsam/gui/assets"
 fi
 if [ -z "${description}" ]; then
-  description='ezsam is a tool to extract objects from images or video via text prompt - info at https://www.ezsam.org'
+  description='ezsam - a tool to extract objects from images or video via text prompt - info at https://www.ezsam.org'
 fi
 tempdir="{TEMP}/ezsam"  # Should match ezsam.lib.config.EXECUTABLE_NAME
 outfile="${name}"
 echo "Creating ${name}-${version} at `date` ..."
-python -m nuitka --enable-plugin=tk-inter --onefile --assume-yes-for-downloads --disable-console \
+python -m nuitka --enable-plugin=tk-inter --onefile --assume-yes-for-downloads --enable-console \
   --onefile-tempdir-spec="${tempdir}" \
   --include-data-dir="${assets}=${assets}" \
   --output-filename="${outfile}" \
@@ -41,7 +41,7 @@ python -m nuitka --enable-plugin=tk-inter --onefile --assume-yes-for-downloads -
   --file-version="${version}" \
   --file-description="${description}" \
   --output-dir="${dist}" "${entrypoint}"
-# Move onefile executable to different folder and checksum
+# Move one-file executable to different folder and checksum
 cd "${dist}"
 mkdir -p "onefile"
 mv "${outfile}" "onefile/${outfile}"
