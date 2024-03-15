@@ -28,7 +28,7 @@ if [ -z "${assets}" ]; then
   assets="src/ezsam/gui/assets"
 fi
 if [ -z "${description}" ]; then
-  description='ezsam is a tool to extract objects from images or video via text prompt - info at https://www.ezsam.org'
+  description='ezsam - a tool to extract objects from images or video via text prompt - info at https://www.ezsam.org'
 fi
 tempdir="{TEMP}/ezsam"  # Should match ezsam.lib.config.EXECUTABLE_NAME
 outfile="${name}"
