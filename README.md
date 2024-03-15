@@ -7,10 +7,10 @@ Input images and videos, describe the subjects or objects you want to keep, and 
 **Check out the docs! [ezsam.org](https://www.ezsam.org)**
 
 <img src="examples/car-3.gui.png" height=200 />
-<video src="examples/food.mp4" height=200 controls>
+<video src="https://github.com/ae9is/ezsam/assets/125031666/42d95ab0-2090-4dc6-a892-726699a2656f" height=200 controls>
   A large table with plates of Thanksgiving food including a whole turkey on a conveyor-style lazy susan.
 </video>
-<video src="examples/food.turkey.webm" height=200 controls>
+<video src="https://github.com/ae9is/ezsam/assets/125031666/42d95ab0-2090-4dc6-a892-726699a2656f" height=200 controls>
   A whole cooked turkey flying through the void.
 </video>
 
