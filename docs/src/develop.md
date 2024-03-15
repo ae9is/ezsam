@@ -40,9 +40,32 @@ Some dependencies like [pytorch](https://pytorch.org/get-started/locally/) insta
 
 Currently, the project just installs the default `pytorch` packages for your system on [PyPI](https://pypi.org/project/torch/). System specific dependencies are excluded from the project's lock file (list of frozen dependencies for reproducible installs).
 
+This means Mac and Windows will end up with CPU-targeted versions of pytorch by default, and Linux users will end up with a CUDA 12.1 version of pytorch. The CPU versions of pytorch don't require an NVIDIA GPU, and the dependencies (and built executable) are much smaller, but run much slower.
+
+If you're able to, it's highly recommended that you install a CUDA-enabled version of pytorch following the [installation matrix here](https://pytorch.org/get-started/locally/).
+
+I.e. on Windows something like (updating version numbers as needed):
+```bash
+# from github project folder
+source .venv/bin/activate
+pip install torch torchvision --index-url https://download.pytorch.org/whl/cu121
+# or
+pdm add https://download.pytorch.org/whl/cu121/torch-2.2.1%2Bcu121-cp311-cp311-win_amd64.whl
+pdm add https://download.pytorch.org/whl/cu121/torchvision-0.17.1%2Bcu121-cp311-cp311-win_amd64.whl
+
+```
+
 ## Releases
 
 Release executables of the GUI are generated using [Nuitka](https://nuitka.net/).
+
+### Standalone vs One-file
+
+In Nuitka, a standalone release refers to a single standalone distributable folder which is then zipped up and delivered to the user to unpack.
+
+A one-file release, which also generates a standalone distributable folder, takes the further step of bundling everything up into one executable file.
+
+Standalone releases are larger when installed (i.e. unpacked) but start much faster. The one-file executable has to extract itself prior to running, which takes some time given the size of the ezsam machine learning library dependencies.
 
 ### Local build
 
@@ -71,6 +94,6 @@ pdm make-nuitka
 Multi-platform builds are setup with the GitHub workflow [make.yml](https://github.com/ae9is/ezsam/blob/main/.github/workflows/make.yml), which is manually triggered.
 
 !!! warning
-    It's recommended to build a small test program first like [tests/nuitka-test-simple.py](https://github.com/ae9is/ezsam/blob/main/tests/nuitka-test-simple.py) to make sure the workflow is working correctly. The full ezsam executable build is relatively large and may take an hour or so to build.
+    It's recommended to build a small test program first like [tests/nuitka-test-simple.py](https://github.com/ae9is/ezsam/blob/main/tests/nuitka-test-simple.py) to make sure the workflow is working correctly. The full ezsam executable build is relatively large and takes a couple hours to build.
 
 ###
