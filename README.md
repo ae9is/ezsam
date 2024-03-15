@@ -6,6 +6,20 @@ Input images and videos, describe the subjects or objects you want to keep, and 
 
 **Check out the docs! [ezsam.org](https://www.ezsam.org)**
 
+<img src="examples/car-3.gui.png" height=200 />
+<video src="examples/food.mp4" height=200 controls>
+  A large table with plates of Thanksgiving food including a whole turkey on a conveyor-style lazy susan.
+</video>
+<video src="examples/food.turkey.webm" height=200 controls>
+  A whole cooked turkey flying through the void.
+</video>
+
+<img src="examples/car-3.both.png" width=150 />
+
+<img src="examples/car-3.black.png" width=150 />
+
+<img src="examples/car-3.nowheels.png" width=150 />
+
 ## Why?
 
 Meta's [Segment Anything](https://github.com/facebookresearch/segment-anything) is a powerful tool for separating parts of images,
