@@ -34,6 +34,22 @@ sudo apt install ffmpeg imagemagick
 
 If you're having trouble, see [Troubleshooting](#troubleshooting).
 
+## Binary installation
+
+The gui app (only) has a compiled executable release.
+
+1. Still install FFmpeg and/or ImageMagick as in [Standard installation](install.md#standard-installation)
+1. (Optional) [See here](develop.md#standalone-vs-one-file) about "standalone" vs "one-file" releases
+1. [Download a release](https://github.com/ae9is/ezsam/releases)
+1. Extract anywhere and run
+
+!!! warning
+    On Windows, you might have to fix the executable's permissions to allow it to run:
+
+    1. Right click release folder or onefile executable &rarr; Properties &rarr; Security &rarr; Advanced
+    1. Check "Replace all child object permissions...", if it's the release folder
+    1. Select first entry "Deny Everyone Traverse folder & execute" &rarr; Remove this *Deny* permission
+
 ## Troubleshooting
 
 ### General
