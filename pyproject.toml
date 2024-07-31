@@ -3,7 +3,7 @@ name = "ezsam"
 version = "0.3.0"
 description = "Extract foreground from images or video via text prompt" 
 readme = "README.md"
-requires-python = ">=3.9, <3.12"
+requires-python = ">=3.10, <=3.12"
 license = {text = "AGPL-3.0-only"}
 keywords = [
   "GroundingDINO",
@@ -37,9 +37,9 @@ classifiers = [
   "Topic :: Scientific/Engineering :: Image Recognition",
   "Topic :: Scientific/Engineering :: Artificial Intelligence",
   "Programming Language :: Python :: 3",
-  "Programming Language :: Python :: 3.9",
   "Programming Language :: Python :: 3.10",
   "Programming Language :: Python :: 3.11",
+  "Programming Language :: Python :: 3.12",
   "Programming Language :: Python :: 3 :: Only",
 ]
 dependencies = [
