@@ -2,7 +2,7 @@
 name = "docs"
 version = "0.0.0"
 description = "Docs for ezsam" 
-requires-python = ">=3.9, <3.12"
+requires-python = ">=3.10, <3.13"
 license = {text = "AGPL-3.0-only"}
 authors = [
   {name = "ae9is", email = "aegis.opensource@gmail.com"}
@@ -54,7 +54,7 @@ exclude = [
 ]
 line-length = 120
 indent-width = 2
-target-version = "py311"
+target-version = "py312"
 
 [tool.ruff.format]
 quote-style = "single"
