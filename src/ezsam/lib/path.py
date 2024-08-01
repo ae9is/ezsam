@@ -10,7 +10,7 @@ from ezsam.lib.logger import debug, warn
 
 
 # ref: https://stackoverflow.com/a/13790741
-def resource_path(relative_path: str) -> str:
+def resource_path(relative_path: str, throw_error = False) -> str:
   """
   Try to get absolute path to resource, whether in development or in standalone/one-file executables for Nuitka or PyInstaller.
   """
@@ -30,7 +30,9 @@ def resource_path(relative_path: str) -> str:
     try:
       path = os.path.normpath(os.path.join(base_path, relative_path))
       open(path)
-    except FileNotFoundError:
+    except FileNotFoundError as err:
+      if throw_error:
+        raise err
       warn(f'Could not find file at {relative_path}, returning {path} anyways ...')
   debug(f'Converted {relative_path} to {path}')
   return path
