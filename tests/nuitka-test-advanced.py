@@ -170,7 +170,7 @@ class App(ctk.CTk, dnd.TkinterDnD.DnDWrapper):
 
 def main(argv=None):
   ctk.set_appearance_mode(APPEARANCE_MODE)
-  ctk.set_default_color_theme(resource_path(COLOR_THEME))
+  ctk.set_default_color_theme(resource_path(COLOR_THEME[0]))
   app = App()
   app.start()
 

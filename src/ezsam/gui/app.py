@@ -167,8 +167,17 @@ class App(ctk.CTk, dnd.TkinterDnD.DnDWrapper):
 
 
 def main(argv=None):
+  debug('Starting ezsam-gui ...')
   ctk.set_appearance_mode(APPEARANCE_MODE)
-  ctk.set_default_color_theme(resource_path(COLOR_THEME))
+  theme_file_path = 'blue'
+  for path in COLOR_THEME:
+    try:
+      theme_file_path = resource_path(path, throw_error=True)
+      debug(f'Using theme file at: {theme_file_path} ...')
+      break
+    except FileNotFoundError:
+      continue
+  ctk.set_default_color_theme(theme_file_path)
   app = App()
   app.start()
 

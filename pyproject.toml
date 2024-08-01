@@ -121,8 +121,8 @@ make = [
 [tool.pdm.build]
 excludes = ["./**/.git"]
 package-dir = "src"
-includes = ["src/ezsam/**/*.py"]
-source-includes = ["tests", "LICENSE", "README.md", "requirements.txt"]
+includes = ["src/ezsam/**/*.py", "src/ezsam/gui/assets/*"]
+source-includes = ["tests", "LICENSE", "README.md", "requirements.txt", "theme.json"]
 
 [tool.ruff]
 exclude = [
