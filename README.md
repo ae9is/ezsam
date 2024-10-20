@@ -1,3 +1,5 @@
+*Update: [SAM 2 extends SAM to video](https://github.com/facebookresearch/sam2). You might still find ezsam useful for small GIFs or image batches.*
+
 # ezsam (easy segment anything model)
 
 A command line and gui tool to segment images and video via text prompts.
